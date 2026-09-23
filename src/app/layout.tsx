@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope, Source_Serif_4 } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
@@ -14,8 +14,15 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: "Аким на 5 часов",
-  description: "AI-симулятор управленческих решений. Astana Quality of Life Score.",
+  title: { default: "Аким — город начинается с вас", template: "%s · Аким" },
+  description: "Исследуйте Казахстан на карте, планируйте развитие районов Астаны и проверяйте свои решения в симуляторе городского бюджета.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#f8f9f5",
 };
 
 export default function RootLayout({

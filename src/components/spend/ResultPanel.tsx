@@ -64,7 +64,7 @@ export function ResultPanel({
           <Stat label="Было" value={formatScore(result.scoreBefore.finalScore)} />
           <Stat label="Стало" value={formatScore(result.finalScore)} big />
           <Stat label="Δ" value={formatDelta(result.scoreDelta)} />
-          <Stat label="Бюджет" value={`${result.remainingBudget} / ${BUDGET}`} />
+          <Stat label="Остаток бюджета" value={`${budget - result.totalCost} / ${budget}`} />
         </div>
         <p className="mt-6 text-xs text-white/70">
           Критических проблем: {result.scoreBefore.criticalCount} → {result.criticalIndicators.length}. Самый слабый район: {result.weakestDistrict.name}.
@@ -113,7 +113,7 @@ export function ResultPanel({
               title="Ваш город"
               score={formatScore(result.finalScore)}
               district={result.weakestDistrict.name}
-              budget={`${result.remainingBudget} / ${BUDGET}`}
+              budget={`${budget - result.totalCost} / ${budget}`}
               critical={`${result.criticalIndicators.length}`}
               accent="human"
             />
@@ -183,7 +183,7 @@ export function ResultPanel({
         <div className="mt-4 space-y-4">
           {result.comparisons.map((district) => (
             <div key={district.id}>
-              <div className="grid grid-cols-[100px_1fr_auto] items-center gap-3 text-sm">
+              <div className="simulator-result-comparison">
                 <span className="font-medium text-ink">{district.nameRu}</span>
                 <div className="relative h-2.5 overflow-hidden rounded-full bg-surface-2">
                   <div
@@ -426,7 +426,7 @@ function Leaderboard({
           Очистить
         </button>
       </div>
-      <p className="mt-1 text-sm text-muted">Одинаковый бюджет и исходные данные у всех команд.</p>
+      <p className="mt-1 text-sm text-muted">Сравнивайте результаты с учётом выбранного бюджета и городских событий.</p>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>

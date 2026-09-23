@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BriefcaseBusiness, Loader2, Receipt as ReceiptIcon, ShieldCheck, Users } from "lucide-react";
-import { BUDGET, CATEGORY_LABELS, REQUIRED_DECISIONS } from "@/domain/constants";
+import { CATEGORY_LABELS, REQUIRED_DECISIONS } from "@/domain/constants";
 import { CATEGORIES } from "@/domain/types";
 import type { Decision } from "@/domain/types";
 import { DISTRICTS_BY_ID } from "@/data/districts";
@@ -41,12 +41,12 @@ export function Receipt({
   const covered = new Set(decisions.map((decision) => MEASURES_BY_ID[decision.measureId].category));
 
   return (
-    <section className="mx-auto w-full max-w-md">
-      <div className="panel rounded-2xl px-6 py-7">
+    <section className="simulator-receipt mx-auto w-full max-w-xl">
+      <div className="panel rounded-3xl px-5 py-7 sm:px-8 sm:py-8">
         <div className="flex flex-col items-center text-center">
           <ReceiptIcon className="h-6 w-6 text-green" />
           <h2 className="mt-2 text-xl font-bold text-ink">Ваш чек решений</h2>
-          <p className="text-sm text-muted">Бюджет Астаны · {BUDGET} млрд ₸</p>
+          <p className="mt-1 text-sm text-muted">Бюджет сценария · {budget} млрд ₸</p>
         </div>
 
         <div className="mt-5 grid grid-cols-3 gap-2">
@@ -55,6 +55,7 @@ export function Receipt({
               key={id}
               type="button"
               onClick={() => setAvatar(id)}
+              aria-pressed={avatar === id}
               className={cn(
                 "rounded-xl border px-2 py-2 text-center transition",
                 avatar === id ? "border-green bg-green-soft text-green-dark" : "border-line bg-surface-2 text-muted",
@@ -66,14 +67,15 @@ export function Receipt({
           ))}
         </div>
 
-        <label className="mt-5 flex items-center gap-2 rounded-xl border border-line bg-surface-2 px-3 py-2 focus-within:border-green">
+        <label className="mt-5 flex min-h-12 items-center gap-2 rounded-xl border border-line bg-surface-2 px-3 py-2 focus-within:border-green">
           <Users className="h-4 w-4 text-muted" />
           <input
             value={team}
             onChange={(event) => onTeamChange(event.target.value)}
             placeholder="Название команды"
+            aria-label="Название команды"
             maxLength={40}
-            className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-muted"
+            className="w-full min-w-0 bg-transparent text-base text-ink outline-none placeholder:text-muted"
           />
         </label>
 
@@ -158,7 +160,7 @@ export function Receipt({
 
         {overBudget ? (
           <p className="mt-4 rounded-xl bg-rose/10 px-3 py-2 text-xs leading-5 text-rose">
-            После события план не помещается в бюджет на {spent - budget} млрд ₸. Отмените одну из мер и
+            План превышает доступный бюджет на {spent - budget} млрд ₸. Отмените одну из мер и
             перераспределите средства.
           </p>
         ) : null}

@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { AccountLink } from "@/components/auth/AccountLink";
-import { Bot, CloudLightning, Landmark, Scale, Wallet } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, CloudLightning, MapPin, SlidersHorizontal } from "lucide-react";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { BUDGET, CATEGORY_LABELS, REQUIRED_DECISIONS } from "@/domain/constants";
-import { CATEGORIES } from "@/domain/types";
-import type { AlternativeScenario, Category, Decision, SimulationResult } from "@/domain/types";
+import { CATEGORIES, DISTRICT_IDS } from "@/domain/types";
+import type { AlternativeScenario, Category, Decision, DistrictId, SimulationResult } from "@/domain/types";
+import { DISTRICTS_BY_ID } from "@/data/districts";
 import { EVENT_TRIGGER_DECISION, pickCityEvent, type CityEvent } from "@/data/events";
 import { MEASURES } from "@/data/measures";
 import { adviseImprovements, type Advice } from "@/engine/advisor";
@@ -39,6 +42,7 @@ import { DistrictStrip } from "./DistrictStrip";
 import { MeasureTile } from "./MeasureTile";
 import { Receipt } from "./Receipt";
 import { ResultPanel } from "./ResultPanel";
+import "./simulator.css";
 
 const BASELINE = baselineScore().finalScore;
 const BASE_DISTRICTS = baselineDistricts();
@@ -64,10 +68,15 @@ export function SpendGame() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [resetKey, setResetKey] = useState(0);
   const [budgetLimit, setBudgetLimit] = useState(BUDGET);
+  const [selectedDistrictId, setSelectedDistrictId] = useState<DistrictId>("esil");
 
   const budget = budgetLimit - (event?.reserve ?? 0);
 
   useEffect(() => {
+    const district = new URLSearchParams(window.location.search).get("district");
+    if (district && DISTRICT_IDS.includes(district as DistrictId)) {
+      setSelectedDistrictId(district as DistrictId);
+    }
     const stored = loadDecisions();
     if (validateDecisions(stored, "partial").ok) setDecisions(stored);
     setEventMode(loadSessionValue(EVENT_MODE_KEY, false));
@@ -212,57 +221,49 @@ export function SpendGame() {
   }
 
   return (
-    <div className="min-h-screen pb-20">
-      <header className="mx-auto flex max-w-3xl flex-col items-center px-5 pb-10 pt-14 text-center">
-        <div className="mb-6 flex w-full justify-end"><AccountLink /></div>
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-green">
-          HackAlem AI · AI-симулятор управления городом
-        </p>
-        <div className="mt-6 flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-green to-green-dark text-white shadow-[0_12px_40px_rgba(22,163,74,0.35)]">
-          <Landmark className="h-12 w-12" strokeWidth={1.6} />
-        </div>
-        <h1 className="mt-6 text-4xl font-bold tracking-tight text-ink md:text-6xl">Аким на 5 часов</h1>
-        <p className="mt-4 max-w-xl text-base leading-7 text-muted md:text-lg">
-          У вас <span className="font-semibold text-ink">{budgetLimit} млрд ₸</span> городского бюджета и ровно{" "}
-          {REQUIRED_DECISIONS} решений. Распределите их между транспортом, экологией, социальной сферой,
-          безопасностью и сервисами так, чтобы Astana Quality of Life Score вырос для всех районов.
-        </p>
-
-        <div className="mt-8 grid w-full gap-3 text-left sm:grid-cols-3">
-          <Feature icon={<Wallet className="h-4 w-4" />} title="Единый бюджет" text="Одинаковые деньги и данные у всех команд" />
-          <Feature icon={<Scale className="h-4 w-4" />} title="Честная модель" text="Задержка эффекта, синергии и конфликты мер" />
-          <Feature icon={<Bot className="h-4 w-4" />} title="AI-аналитик" text="Сильные стороны, риски и план улучшения" />
-        </div>
-
-        <button
-          type="button"
-          onClick={toggleEventMode}
-          className={cn(
-            "mt-6 flex items-center gap-3 rounded-full border px-4 py-2 text-sm font-medium transition",
-            eventMode ? "border-rose/40 bg-rose/5 text-rose" : "border-line bg-surface text-ink hover:border-green/60",
-          )}
-        >
-          <CloudLightning className="h-4 w-4" />
-          Режим городских событий
-          <span className={cn("relative h-5 w-9 rounded-full transition", eventMode ? "bg-rose" : "bg-line-strong")}>
-            <span
-              className={cn(
-                "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all",
-                eventMode ? "left-[18px]" : "left-0.5",
-              )}
-            />
-          </span>
-        </button>
-        {eventMode && !event ? (
-          <p className="mt-2 text-xs text-muted">
-            После {EVENT_TRIGGER_DECISION}-го решения случится непредвиденное событие, и часть бюджета придётся
-            перераспределить.
+    <div className="app-shell simulator-shell">
+      <SiteHeader />
+      <header className="site-container simulator-intro">
+        <div className="simulator-intro-copy">
+          <p className="eyebrow"><span className="simulator-status-dot" /> Рабочее пространство · Астана</p>
+          <h1>Ваш город.<br /><span>Ваши решения.</span></h1>
+          <p className="simulator-description">
+            {REQUIRED_DECISIONS} решений, один город и тысячи возможностей.
+            Выберите, что изменить, и узнайте, как это повлияет на жизнь районов.
           </p>
-        ) : null}
-        <label className="mt-5 flex w-full max-w-sm items-center justify-between gap-4 rounded-2xl border border-line bg-surface px-4 py-3 text-left shadow-sm">
-          <span><span className="block text-sm font-semibold text-ink">Желаемый бюджет</span><span className="text-xs text-muted">Можно изменить под задачу</span></span>
-          <span className="flex items-center gap-2"><input type="number" min="20" max="500" value={budgetLimit} onChange={(change) => setBudgetLimit(Math.max(20, Math.min(500, Number(change.target.value) || 20)))} className="w-20 rounded-lg border border-line bg-surface-2 px-2 py-1.5 text-right text-sm font-semibold text-ink outline-none focus:border-green" /><span className="text-xs text-muted">млрд ₸</span></span>
-        </label>
+          <Link href={`/map?district=${selectedDistrictId}`} className="simulator-map-link">
+            <MapPin size={16} /> Исследовать на карте <ArrowUpRight size={17} />
+          </Link>
+        </div>
+        <div className="simulator-settings">
+          <p className="simulator-settings-title"><SlidersHorizontal size={15} /> Параметры сценария</p>
+          <label className="simulator-budget-setting">
+            <span>Бюджет города<span className="simulator-setting-hint">От 20 до 500 млрд ₸</span></span>
+            <span className="simulator-budget-input">
+              <input
+                type="number"
+                min="20"
+                max="500"
+                aria-label="Бюджет города в миллиардах тенге"
+                value={budgetLimit}
+                onChange={(change) => {
+                  setBudgetLimit(Math.max(20, Math.min(500, Number(change.target.value) || 20)));
+                  setOutcome(null);
+                }}
+              />
+              <span>млрд ₸</span>
+            </span>
+          </label>
+          <button type="button" role="switch" aria-checked={eventMode} onClick={toggleEventMode} className="simulator-event-toggle">
+            <span><CloudLightning size={17} /> Городские события</span>
+            <span className={cn("simulator-toggle", eventMode && "is-on")}><span /></span>
+          </button>
+          <p className="simulator-settings-note">
+            {eventMode
+              ? `После ${EVENT_TRIGGER_DECISION}-го решения событие изменит ваш бюджет.`
+              : "Добавьте неожиданные события для нового вызова."}
+          </p>
+        </div>
       </header>
 
       <BudgetBar
@@ -273,25 +274,36 @@ export function SpendGame() {
         previewScore={preview ? preview.finalScore : null}
       />
 
-      <main className="mx-auto max-w-6xl space-y-12 px-5 pt-10">
+      <main id="main-content" className="site-container simulator-main">
         {event ? <EventBanner event={event} budget={budget} overBudget={spent > budget} /> : null}
 
         <section>
-          <SectionTitle
-            title="Город сейчас"
-            hint="5 районов Астаны, 10 показателей качества жизни. Оценка района 0–100 обновляется после каждого решения."
+          <SectionTitle number="01" title="Почувствуйте город" hint="Выберите район для будущих проектов. Показатели модели обновляются после каждого решения." />
+          <DistrictStrip
+            before={BASE_DISTRICTS}
+            after={preview?.districtsAfter ?? BASE_DISTRICTS}
+            selectedDistrictId={selectedDistrictId}
+            onSelectDistrict={setSelectedDistrictId}
           />
-          <DistrictStrip before={BASE_DISTRICTS} after={preview?.districtsAfter ?? BASE_DISTRICTS} />
+          <div className="simulator-district-context">
+            <div className="simulator-district-context-icon"><MapPin size={20} /></div>
+            <div>
+              <p><strong>{DISTRICTS_BY_ID[selectedDistrictId].nameRu}</strong><span>Выбран для проектов</span></p>
+              <p>{DISTRICTS_BY_ID[selectedDistrictId].profile}</p>
+            </div>
+            <Link href={`/map?district=${selectedDistrictId}`}>На карте <ArrowUpRight size={16} /></Link>
+          </div>
         </section>
 
         <section>
           <SectionTitle
-            title="Что финансируем?"
-            hint="Не больше двух мер одного направления. Эффект долгих строек за 8 кварталов проявится не полностью."
+            number="02"
+            title="Во что инвестируем?"
+            hint="Выберите 5 проектов. Не больше двух в одном направлении — городу нужен баланс."
           />
-          <div className="mb-5 flex flex-wrap gap-2">
+          <div className="simulator-filter-row" aria-label="Направления проектов">
             <Chip active={category === "all"} onClick={() => setCategory("all")}>
-              Все меры
+              Все проекты <span className="simulator-filter-count">{MEASURES.length}</span>
             </Chip>
             {CATEGORIES.map((item) => (
               <Chip key={item} active={category === item} onClick={() => setCategory(item)}>
@@ -299,13 +311,14 @@ export function SpendGame() {
               </Chip>
             ))}
           </div>
-          <div key={resetKey} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div key={resetKey} className="simulator-measure-grid">
             {visible.map((measure) => (
               <MeasureTile
                 key={measure.id}
                 measure={measure}
                 decisions={decisions}
                 budget={budget}
+                defaultDistrictId={selectedDistrictId}
                 selected={decisions.find((item) => item.measureId === measure.id)}
                 onSelect={select}
                 onRemove={() => remove(measure.id)}
@@ -315,6 +328,7 @@ export function SpendGame() {
         </section>
 
         <div id="receipt" className="scroll-mt-28">
+          <SectionTitle number="03" title="Ваша стратегия готова?" hint="Проверьте выбранные проекты и запустите анализ — посмотрим, каким станет город." />
           <Receipt
             decisions={decisions}
             spent={spent}
@@ -348,6 +362,7 @@ export function SpendGame() {
           </div>
         ) : null}
       </main>
+      <SiteFooter />
     </div>
   );
 }
@@ -373,23 +388,11 @@ function EventBanner({ event, budget, overBudget }: { event: CityEvent; budget: 
   );
 }
 
-function Feature({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+function SectionTitle({ number, title, hint }: { number: string; title: string; hint: string }) {
   return (
-    <div className="panel rounded-2xl px-4 py-3">
-      <p className="flex items-center gap-2 text-sm font-semibold text-ink">
-        <span className="text-green">{icon}</span>
-        {title}
-      </p>
-      <p className="mt-1 text-xs leading-5 text-muted">{text}</p>
-    </div>
-  );
-}
-
-function SectionTitle({ title, hint }: { title: string; hint: string }) {
-  return (
-    <div className="mb-5">
-      <h2 className="text-2xl font-bold tracking-tight text-ink">{title}</h2>
-      <p className="mt-1 text-sm text-muted">{hint}</p>
+    <div className="simulator-section-title">
+      <span>{number}</span>
+      <div><h2>{title}</h2><p>{hint}</p></div>
     </div>
   );
 }
@@ -407,8 +410,9 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
-        "rounded-full border px-4 py-2 text-sm font-medium transition",
+        "simulator-filter-chip",
         active ? "border-green bg-green text-white" : "border-line bg-surface text-ink hover:border-green/60",
       )}
     >

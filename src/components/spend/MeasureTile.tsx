@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Check, MapPin } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowUpRight, Check, MapPin, Sparkles } from "lucide-react";
 import { CATEGORY_LABELS, INDICATOR_SHORT_LABELS } from "@/domain/constants";
 import type { Decision, DistrictId, Measure } from "@/domain/types";
 import { DISTRICTS, DISTRICTS_BY_ID } from "@/data/districts";
@@ -15,20 +15,23 @@ export function MeasureTile({
   decisions,
   selected,
   budget,
+  defaultDistrictId,
   onSelect,
   onRemove,
 }: {
   measure: Measure;
   decisions: Decision[];
   budget: number;
+  defaultDistrictId?: DistrictId;
   selected: Decision | undefined;
   onSelect: (decision: Decision) => void;
   onRemove: () => void;
 }) {
-  const [districtId, setDistrictId] = useState<DistrictId | undefined>(undefined);
+  const [districtId, setDistrictId] = useState<DistrictId | undefined>(defaultDistrictId);
+  useEffect(() => setDistrictId(defaultDistrictId), [defaultDistrictId]);
   const { icon: Icon, blurb } = MEASURE_VISUALS[measure.id];
   const selectedDistrictId = selected && selected.scope === "district" ? selected.districtId : undefined;
-  const preview = buildImpactPreview(measure, districtId ?? selectedDistrictId);
+  const preview = buildImpactPreview(measure, selectedDistrictId ?? districtId);
   const isDistrict = measure.scope === "district";
   const blocked = selected
     ? null
@@ -49,29 +52,29 @@ export function MeasureTile({
   return (
     <article
       className={cn(
-        "flex flex-col rounded-2xl border bg-surface p-5 transition",
+        "simulator-measure-card flex flex-col rounded-2xl border bg-surface p-5 transition",
         selected
           ? "border-green shadow-[0_0_0_3px_var(--green-soft)]"
           : "border-line hover:border-line-strong hover:shadow-sm",
-        hardBlocked && "opacity-55",
+        hardBlocked && "simulator-measure-unavailable",
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div
           className={cn(
-            "flex h-14 w-14 items-center justify-center rounded-2xl",
+            "simulator-measure-icon flex h-12 w-12 items-center justify-center rounded-2xl",
             selected ? "bg-green text-white" : "bg-green-soft text-green-dark",
           )}
         >
-          <Icon className="h-7 w-7" strokeWidth={1.8} />
+          <Icon className="h-6 w-6" strokeWidth={1.65} />
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold tabular-nums text-ink">{measure.cost}</p>
+          <p className="text-[28px] font-bold leading-8 tracking-tight tabular-nums text-ink">{measure.cost}</p>
           <p className="text-[11px] uppercase tracking-[0.14em] text-muted">млрд ₸</p>
         </div>
       </div>
 
-      <h3 className="mt-4 text-[17px] font-semibold leading-snug text-ink">{measure.name}</h3>
+      <h3 className="mt-5 text-[18px] font-semibold leading-snug tracking-tight text-ink">{measure.name}</h3>
       <p className="mt-1.5 text-sm leading-6 text-muted">{blurb}</p>
 
       <div className="mt-3 flex flex-wrap gap-1.5 text-[11px] font-medium">
@@ -100,8 +103,8 @@ export function MeasureTile({
         ))}
       </div>
 
-      <div className="mt-3 rounded-xl border border-line bg-surface-2 px-3 py-2">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">AI Impact Preview</p>
+      <div className="simulator-impact-preview">
+        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-green"><Sparkles size={12} /> Прогноз влияния</p>
         <p className="mt-1 text-xs leading-5 text-ink">{preview.summary}</p>
       </div>
 
@@ -121,8 +124,9 @@ export function MeasureTile({
                   disabled={Boolean(conflict) || unavailableAnywhere}
                   title={conflict ?? undefined}
                   onClick={() => setDistrictId(active ? undefined : district.id)}
+                  aria-pressed={active}
                   className={cn(
-                    "rounded-full border px-3 py-1 text-xs font-medium transition",
+                    "min-h-10 rounded-full border px-3 py-2 text-xs font-medium transition",
                     active
                       ? "border-green bg-green text-white"
                       : "border-line text-ink hover:border-green/60",
@@ -160,9 +164,10 @@ export function MeasureTile({
             type="button"
             disabled={Boolean(blocked)}
             onClick={choose}
-            className="h-11 w-full rounded-xl bg-green text-sm font-semibold text-white transition hover:bg-green-dark disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-muted"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-green text-sm font-semibold text-white transition hover:bg-green-dark disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-muted"
           >
-            {needsDistrict ? "Выберите район" : "Выбрать"}
+            {needsDistrict ? "Выберите район" : "Добавить в план"}
+            {!blocked ? <ArrowUpRight size={16} /> : null}
           </button>
         )}
         {hardBlocked ? (

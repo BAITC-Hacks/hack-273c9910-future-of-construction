@@ -1,77 +1,21 @@
-"use client";
-
 import Link from "next/link";
-import { AccountLink } from "@/components/auth/AccountLink";
-import { ArrowRight, BarChart3, Building2, ChevronRight, CircleGauge, Database, ShieldCheck, SlidersHorizontal, Sparkles } from "lucide-react";
-import { BUDGET, REQUIRED_DECISIONS } from "@/domain/constants";
-
-const navItems = [
-  { href: "#platform", label: "Платформа" },
-  { href: "#workflow", label: "Как работает" },
-  { href: "#governance", label: "Для акимата" },
-];
+import { ArrowDown, ArrowRight, ArrowUpRight, ChartNoAxesCombined, Check, Compass, Layers3, Leaf, MapPinned, MoveUpRight, Route, Sparkles } from "lucide-react";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { CityIllustration } from "./CityIllustration";
+import { YandexMap } from "@/components/map/YandexMap";
+import { KAZAKHSTAN } from "@/data/mapPlaces";
+import { baselineScore } from "@/engine/scoring";
+import { formatScore } from "@/lib/utils";
 
 export function LandingPage() {
-  return (
-    <main className="min-h-screen overflow-hidden bg-[#08120f] text-white">
-      <nav className="relative z-10 mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-5 lg:px-10">
-        <Link href="/" className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-300/30 bg-emerald-300/10 text-emerald-200">
-            <Building2 className="h-5 w-5" />
-          </span>
-          <span>
-            <span className="block text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-200/70">HackAlem AI</span>
-            <span className="block text-lg font-semibold tracking-tight">ASTANA 2028</span>
-          </span>
-        </Link>
-        <div className="hidden items-center gap-8 text-sm text-slate-300 md:flex">
-          {navItems.map((item) => <a key={item.href} href={item.href} className="transition hover:text-white">{item.label}</a>)}
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <AccountLink dark />
-          <Link href="/simulator" className="inline-flex items-center gap-2 rounded-xl bg-emerald-300 px-4 py-2.5 text-sm font-bold text-[#08120f] transition hover:bg-emerald-200">
-            Запустить симулятор <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </nav>
-
-      <section className="relative mx-auto grid max-w-7xl gap-14 px-6 pb-20 pt-20 lg:grid-cols-[1.05fr_.95fr] lg:px-10 lg:pb-28 lg:pt-28">
-        <div className="absolute -left-40 top-20 h-96 w-96 rounded-full bg-emerald-400/10 blur-3xl" />
-        <div className="relative">
-          <p className="mb-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200"><Sparkles className="h-4 w-4" /> Цифровой двойник управленческих решений</p>
-          <h1 className="max-w-3xl text-5xl font-semibold leading-[1.02] tracking-[-0.05em] text-balance sm:text-6xl lg:text-8xl">Город, который помнит каждое решение.</h1>
-          <p className="mt-7 max-w-xl text-lg leading-8 text-slate-300">AI Urban Decision Lab помогает акимату видеть последствия инвестиций до того, как они станут городской реальностью.</p>
-          <div className="mt-9 flex flex-wrap gap-3">
-            <Link href="/simulator" className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#08120f] transition hover:bg-emerald-100"><CircleGauge className="h-4 w-4" /> Открыть рабочий стол</Link>
-            <Link href="/admin" className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"><SlidersHorizontal className="h-4 w-4" /> Консоль администратора</Link>
-          </div>
-          <div className="mt-12 flex flex-wrap gap-8 border-t border-white/10 pt-6 text-sm text-slate-400">
-            <span><strong className="text-2xl text-white">{BUDGET}</strong> млрд ₸ базовый бюджет</span>
-            <span><strong className="text-2xl text-white">{REQUIRED_DECISIONS}</strong> решений в сценарии</span>
-            <span><strong className="text-2xl text-white">10</strong> индикаторов качества жизни</span>
-          </div>
-        </div>
-        <div className="relative lg:pt-10">
-          <div className="absolute -inset-5 rounded-[2rem] border border-emerald-300/10 bg-emerald-300/5 blur-sm" />
-          <div className="relative overflow-hidden rounded-[1.5rem] border border-white/15 bg-[#10211b] shadow-2xl shadow-emerald-950/50">
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4"><span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">City command center</span><span className="flex items-center gap-2 text-xs text-emerald-300"><span className="h-2 w-2 rounded-full bg-emerald-300" /> Live model</span></div>
-            <div className="grid gap-4 p-5 sm:grid-cols-2">
-              <DashboardStat icon={<BarChart3 />} label="Quality of Life" value="68.4" delta="+15.8" />
-              <DashboardStat icon={<ShieldCheck />} label="Critical indicators" value="03" delta="−42%" />
-              <div className="rounded-2xl border border-white/10 bg-white/[.04] p-4 sm:col-span-2"><div className="mb-5 flex items-center justify-between"><span className="text-sm text-slate-300">Городской баланс</span><span className="text-xs text-emerald-300">8 кварталов</span></div><div className="flex h-36 items-end gap-2">{[35, 48, 42, 61, 55, 68, 64, 82].map((height, index) => <div key={index} className="flex-1 rounded-t-md bg-gradient-to-t from-emerald-500/40 to-emerald-200" style={{ height: `${height}%` }} />)}</div><div className="mt-3 flex justify-between text-[10px] text-slate-500"><span>Q1</span><span>Q4</span><span>Q8</span></div></div>
-              <div className="rounded-2xl border border-white/10 bg-white/[.04] p-4 sm:col-span-2"><div className="flex items-start gap-3"><span className="mt-0.5 text-amber-300"><Database className="h-4 w-4" /></span><div><p className="text-sm font-semibold">AI рекомендует усилить связку</p><p className="mt-1 text-xs leading-5 text-slate-400">«Безопасные переходы» + «умные светофоры» снижают риск в Сарыарке.</p></div><ChevronRight className="ml-auto h-4 w-4 text-slate-500" /></div></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="platform" className="border-t border-white/10 bg-[#f3f5f0] px-6 py-20 text-[#102019] lg:px-10"><div className="mx-auto max-w-7xl"><p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Единый контур управления</p><h2 className="mt-3 max-w-2xl text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">От бюджета до измеримого результата в одном окне.</h2><div className="mt-12 grid gap-4 md:grid-cols-3"><InfoCard icon={<CircleGauge />} title="Сценарии до запуска" text="Проверяйте решения на цифровой модели районов, бюджета и временного лага." /><InfoCard icon={<BarChart3 />} title="Язык показателей" text="Вместо общих обещаний — 10 индикаторов, понятный score и карта слабых мест." /><InfoCard icon={<Database />} title="Контроль конфигурации" text="Администратор управляет каталогом мер, стоимостью, приоритетами и доступностью." /></div></div></section>
-      <section id="workflow" className="bg-[#e8eee7] px-6 py-16 text-[#102019] lg:px-10"><div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-3"><Step number="01" title="Соберите портфель" text="Выберите меры и задайте желаемый бюджет под конкретную повестку." /><Step number="02" title="Сравните последствия" text="Модель покажет эффект по районам, задержку результата и opportunity cost." /><Step number="03" title="Зафиксируйте курс" text="Получите понятный управленческий отчёт и сохраните сценарий для команды." /></div></section>
-      <footer id="governance" className="border-t border-[#d5ded3] bg-[#f3f5f0] text-[#102019]"><div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-8 text-sm lg:flex-row lg:items-center lg:justify-between lg:px-10"><span className="font-semibold tracking-tight">ASTANA 2028 <span className="font-normal text-slate-500">· AI Urban Decision Lab</span></span><div className="flex gap-5 text-slate-600"><Link href="/simulator" className="transition hover:text-emerald-700">Рабочий стол</Link><Link href="/admin" className="transition hover:text-emerald-700">Администрирование</Link></div></div></footer>
-    </main>
-  );
+  return <div className="app-shell"><SiteHeader /><main id="main-content">
+    <section className="site-container hero-section"><div className="hero-copy"><span className="eyebrow"><span className="status-dot" /> ПЛАТФОРМА ГОРОДСКИХ РЕШЕНИЙ</span><h1>Большие перемены<br />начинаются<br />с <em>вашего решения.</em></h1><p className="hero-description">Каким будет ваш город завтра? Исследуйте районы, распределяйте бюджет и смотрите, как ваши идеи меняют жизнь людей.</p><div className="hero-buttons"><Link href="/simulator" className="button-primary">Стать акимом <ArrowUpRight size={18} /></Link><Link href="/map" className="button-secondary"><MapPinned size={18} /> Исследовать карту</Link></div><div className="hero-footnote"><span className="hero-avatars"><span>А</span><span>Қ</span><span>М</span></span><span>Ваш город. Ваши приоритеты.<br /><strong>5 решений, которые имеют значение.</strong></span></div></div>
+      <div className="hero-visual"><div className="visual-topline"><span><span className="status-dot" /> АСТАНА, КАЗАХСТАН</span><Compass size={20} strokeWidth={1.3} /></div><CityIllustration /><div className="city-label"><MapPinned size={13} /> Астана · город возможностей</div><div className="floating-card quality-card"><span className="small-icon"><ChartNoAxesCombined size={18} /></span><div><small>Качество жизни · модель</small><strong>{formatScore(baselineScore().finalScore)} <span>/ 100</span></strong></div><span className="mini-chart"><i /><i /><i /><i /><i /></span></div><div className="floating-card idea-card"><span className="small-icon"><Leaf size={20} /></span><div><strong>Больше зелени. Больше жизни.</strong><small>Начните с парка в своём районе</small></div></div><div className="visual-caption"><span>01 / ГОРОД, КОТОРЫЙ ВЫ СОЗДАЁТЕ</span><span>ПЛАНИРУЙТЕ СМЕЛЕЕ <MoveUpRight size={12} /></span></div></div>
+    </section>
+    <section className="site-container"><div className="stats-ribbon"><div className="stats-intro"><span className="small-icon"><Layers3 size={23} /></span><span>Сложный город.<br /><strong>Понятные решения.</strong></span></div>{[{v:"100",u:"млрд ₸",l:"бюджет вашего сценария"},{v:"5",u:"районов",l:"разные потребности людей"},{v:"14",u:"инициатив",l:"от парков до новых школ"},{v:"10",u:"показателей",l:"измеримый эффект решений"}].map(item=><div key={item.l} className="ribbon-stat"><strong>{item.v} <span>{item.u}</span></strong><small>{item.l}</small></div>)}</div></section>
+    <section className="site-container landing-map-section" id="platform"><div className="section-heading"><div><span className="eyebrow">01 — ИССЛЕДУЙТЕ</span><h2>Вся страна. <em>Ближе, чем кажется.</em></h2><p>Посмотрите на город с новой стороны — найдите место для следующей идеи.</p></div><Link href="/map" className="text-link">Открыть карту <ArrowUpRight size={18} /></Link></div><div className="landing-map-grid"><div className="landing-map-frame"><div className="map-preview-header"><span><MapPinned size={16} /> Казахстан</span><span className="subtle-badge">Яндекс Карты</span></div><YandexMap place={KAZAKHSTAN} /></div><div className="map-feature-panel"><span className="icon-large"><Compass size={27} strokeWidth={1.5} /></span><h3>У каждого места<br />есть потенциал.</h3><p>Переключайтесь между городами и районами. Сохраняйте места, которые заслуживают внимания.</p><ul><li><Check size={16} /> Карта, спутник и дорожная обстановка</li><li><Check size={16} /> Избранные места и ваши заметки</li><li><Check size={16} /> От района на карте — к плану действий</li></ul><Link href="/map" className="button-primary">Найти свою точку на карте <ArrowRight size={17} /></Link><small>Карта реальная. Показатели районов — учебная модель.</small></div></div></section>
+    <section id="workflow" className="workflow-section"><div className="site-container"><div className="section-heading"><div><span className="eyebrow">02 — МЕНЯЙТЕ</span><h2>От «а что, если» <em>к результату.</em></h2></div><p>Не нужно быть урбанистом.<br />Достаточно заботиться о своём городе.</p></div><div className="workflow-grid">{[{n:"01",icon:MapPinned,title:"Узнайте свой город",text:"Исследуйте карту и показатели районов. Найдите, где перемены нужнее всего.",tag:"Начните с любопытства"},{n:"02",icon:Route,title:"Расставьте приоритеты",text:"Новая школа, зелёный парк или удобный транспорт? Соберите свой набор из пяти решений.",tag:"Каждый тенге имеет значение"},{n:"03",icon:ChartNoAxesCombined,title:"Посмотрите в будущее",text:"Запустите симуляцию. Сравните изменения и получите объяснение результатов от AI-аналитика.",tag:"Решения, подкреплённые данными"}].map(({n,icon:Icon,title,text,tag})=><article key={n} className="workflow-card"><div><span className="small-icon"><Icon size={23} strokeWidth={1.5} /></span><span className="step-number">{n}</span></div><h3>{title}</h3><p>{text}</p><span className="step-tag">{tag} <ArrowUpRight size={14} /></span></article>)}</div></div></section>
+    <section className="site-container"><div className="start-banner"><div><span className="eyebrow"><Sparkles size={15} /> ВАШ СЛЕДУЮЩИЙ ШАГ</span><h2>Город будущего<br />не построит себя сам.</h2><p>Возьмите управление в свои руки. Хотя бы на 5 часов.</p></div><Link href="/simulator" className="button-light">Создать первый сценарий <ArrowUpRight size={19} /></Link><ArrowDown className="banner-decoration" aria-hidden="true" /></div></section>
+  </main><SiteFooter /></div>;
 }
-
-function DashboardStat({ icon, label, value, delta }: { icon: React.ReactNode; label: string; value: string; delta: string }) { return <div className="rounded-2xl border border-white/10 bg-white/[.04] p-4"><div className="flex items-center justify-between text-emerald-300">{icon}<span className="text-xs text-emerald-300">{delta}</span></div><p className="mt-5 text-3xl font-semibold text-white">{value}</p><p className="mt-1 text-xs text-slate-400">{label}</p></div>; }
-function InfoCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) { return <article className="rounded-2xl border border-[#d8e0d6] bg-white p-5"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">{icon}</div><h3 className="mt-5 text-lg font-semibold">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{text}</p></article>; }
-function Step({ number, title, text }: { number: string; title: string; text: string }) { return <div className="border-t border-[#c9d4c8] pt-4"><p className="text-xs font-bold tracking-[0.2em] text-emerald-700">{number}</p><h3 className="mt-5 text-xl font-semibold">{title}</h3><p className="mt-2 max-w-xs text-sm leading-6 text-slate-600">{text}</p></div>; }
