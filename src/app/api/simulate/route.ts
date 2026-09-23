@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
+import { getScenarioBudget } from "@/data/events";
 import { simulateDecisions, SimulationError } from "@/engine/simulation";
 import { validateDecisions } from "@/engine/validator";
 import { simulateRequestSchema } from "@/lib/schemas";
+import { readScenarioBody, ScenarioRequestError } from "@/lib/scenario-http";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await readScenarioBody(request);
     const parsed = simulateRequestSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -21,7 +23,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const validation = validateDecisions(parsed.data.decisions, "final");
+    const budget = getScenarioBudget(parsed.data.eventId);
+    const validation = validateDecisions(parsed.data.decisions, "final", budget);
     if (!validation.ok) {
       return NextResponse.json(
         { ok: false, errors: validation.errors },
@@ -29,9 +32,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = simulateDecisions(parsed.data.decisions);
+    const result = simulateDecisions(parsed.data.decisions, budget);
     return NextResponse.json({ ok: true, result });
   } catch (error) {
+    if (error instanceof ScenarioRequestError) return NextResponse.json({ ok: false, errors: [{ code: "INVALID_REQUEST", message: error.message }] }, { status: error.status });
     if (error instanceof SimulationError) {
       return NextResponse.json(
         {

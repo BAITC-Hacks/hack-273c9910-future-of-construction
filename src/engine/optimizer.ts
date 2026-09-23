@@ -1,4 +1,4 @@
-import { BUDGET, MAX_MEASURES_PER_CATEGORY } from "@/domain/constants";
+import { BUDGET, MAX_MEASURES_PER_CATEGORY, REQUIRED_DECISIONS } from "@/domain/constants";
 import { DISTRICT_IDS } from "@/domain/types";
 import type {
   AlternativeScenario,
@@ -40,7 +40,7 @@ function combinations<T>(items: T[], k: number): T[][] {
   return result;
 }
 
-function comboFeasible(combo: Measure[]): boolean {
+function comboFeasible(combo: Measure[], budget: number): boolean {
   const ids = new Set(combo.map((measure) => measure.id));
 
   for (const rule of GLOBAL_INCOMPATIBILITIES) {
@@ -59,7 +59,7 @@ function comboFeasible(combo: Measure[]): boolean {
     );
   }
 
-  if (cost > BUDGET) return false;
+  if (cost > budget) return false;
 
   for (const count of categoryCounts.values()) {
     if (count > MAX_MEASURES_PER_CATEGORY) return false;
@@ -153,8 +153,12 @@ function diversify(pool: AlternativeScenario[]): AlternativeScenario[] {
   return selected;
 }
 
-export function optimizeScenarios(): OptimizeResult {
-  const combos = combinations(MEASURES, 5);
+export function optimizeScenarios(budget: number = BUDGET): OptimizeResult {
+  if (!Number.isFinite(budget) || budget < 0) {
+    throw new Error("Budget must be a finite nonnegative number.");
+  }
+
+  const combos = combinations(MEASURES, REQUIRED_DECISIONS);
   const pool: AlternativeScenario[] = [];
   const baseline = baselineScore().finalScore;
   let searchedCombinations = 0;
@@ -162,7 +166,7 @@ export function optimizeScenarios(): OptimizeResult {
 
   for (const combo of combos) {
     searchedCombinations += 1;
-    if (!comboFeasible(combo)) continue;
+    if (!comboFeasible(combo, budget)) continue;
 
     const districtMeasures = combo.filter((measure) => measure.scope === "district");
     const districtCount = districtMeasures.length;
@@ -184,7 +188,7 @@ export function optimizeScenarios(): OptimizeResult {
       keepTop(pool, {
         decisions,
         totalCost: scored.totalCost,
-        remainingBudget: remainingBudget(scored.totalCost),
+        remainingBudget: remainingBudget(scored.totalCost, budget),
         finalScore: scored.finalScore,
         scoreDelta: scored.finalScore - baseline,
         cityAverage: scored.cityAverage,

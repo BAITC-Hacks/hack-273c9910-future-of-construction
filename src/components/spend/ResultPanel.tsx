@@ -13,14 +13,13 @@ import {
   Wand2,
 } from "lucide-react";
 import { DISTRICTS_BY_ID } from "@/data/districts";
-import { BUDGET } from "@/domain/constants";
 import type { AiAnalysis, AlternativeScenario, SimulationResult } from "@/domain/types";
 import type { CityEvent } from "@/data/events";
 import type { Advice } from "@/engine/advisor";
 import { describeDecision } from "@/ai/localAnalyst";
 import type { AnalysisOutcome, SimulationSource } from "@/lib/analysisClient";
 import type { LeaderboardEntry } from "@/lib/leaderboard";
-import { buildAiCouncil } from "@/lib/decisionNarrative";
+import { buildCategoryOverview, buildScenarioNarrative } from "@/lib/decisionNarrative";
 import { cn, formatDelta, formatScore } from "@/lib/utils";
 
 export function ResultPanel({
@@ -29,6 +28,7 @@ export function ResultPanel({
   analysis,
   advice,
   budget,
+  busy = false,
   event,
   leaderboard,
   currentEntryId,
@@ -43,6 +43,7 @@ export function ResultPanel({
   analysis: AnalysisOutcome | null;
   advice: Advice;
   budget: number;
+  busy?: boolean;
   event: CityEvent | null;
   leaderboard: LeaderboardEntry[];
   currentEntryId: string | null;
@@ -53,7 +54,8 @@ export function ResultPanel({
   onReset: () => void;
 }) {
   const insights = new Map(analysis?.analysis.districtInsights.map((item) => [item.districtId, item.text]) ?? []);
-  const council = buildAiCouncil();
+  const council = buildCategoryOverview(result);
+  const narrative = buildScenarioNarrative(result, advice, budget);
 
   return (
     <section id="result" className="mx-auto w-full max-w-4xl animate-pop scroll-mt-28 space-y-4">
@@ -64,15 +66,22 @@ export function ResultPanel({
           <Stat label="Было" value={formatScore(result.scoreBefore.finalScore)} />
           <Stat label="Стало" value={formatScore(result.finalScore)} big />
           <Stat label="Δ" value={formatDelta(result.scoreDelta)} />
-          <Stat label="Остаток бюджета" value={`${budget - result.totalCost} / ${budget}`} />
+          <Stat label="Остаток, усл. ед." value={`${budget - result.totalCost} / ${budget}`} />
         </div>
         <p className="mt-6 text-xs text-white/70">
           Критических проблем: {result.scoreBefore.criticalCount} → {result.criticalIndicators.length}. Самый слабый район: {result.weakestDistrict.name}.
         </p>
       </div>
 
+      {busy ? (
+        <p role="status" className="flex items-center gap-2 rounded-xl bg-surface-2 px-4 py-3 text-sm text-muted">
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+          Результат рассчитан. Уточняем объяснение и ищем лучший план…
+        </p>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-3">
-        <Info label="Потрачено" value={`${result.totalCost} из ${budget} млрд ₸`} />
+        <Info label="Потрачено" value={`${result.totalCost} из ${budget} усл. ед.`} />
         <Info
           label="Самый слабый район"
           value={`${result.weakestDistrict.name} · ${formatScore(result.weakestDistrict.score)}`}
@@ -88,13 +97,10 @@ export function ResultPanel({
           <Wand2 className="h-4 w-4 text-green" /> Цена решения
         </h3>
         <p className="mt-3 text-sm leading-7 text-ink">
-          Вы выбрали набор решений, который поднимает индекс качества жизни, но ограничивает альтернативные крупные
-          инвестиции в транспорт и городскую инфраструктуру. Это не просто плюс — это реальная цена выбора.
+          {narrative.summary}
         </p>
         <ul className="mt-4 space-y-2 text-sm text-ink">
-          <li>✓ Стабилизирован weakest district и закрыты критические зоны.</li>
-          <li>✓ Эффект возрастает за счёт синергии между социальными и экологическими мерами.</li>
-          <li>− По сравнению с максимальным сценариев, часть бюджета не задействована в крупном Транспортном проекте.</li>
+          {narrative.facts.map((fact) => <li key={fact}>{fact}</li>)}
         </ul>
       </div>
 
@@ -102,10 +108,10 @@ export function ResultPanel({
         <div className="panel rounded-2xl p-6">
           <div className="flex items-center justify-between gap-3">
             <h3 className="flex items-center gap-2 font-semibold text-ink">
-              <Sparkles className="h-4 w-4 text-green" /> Что сделал бы AI?
+              <Sparkles className="h-4 w-4 text-green" /> Сравнение с оптимизатором
             </h3>
             <span className="rounded-full bg-green-soft px-3 py-1 text-[11px] font-semibold text-green-dark">
-              AI-сценарий
+              Лучший найденный план
             </span>
           </div>
           <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -113,15 +119,15 @@ export function ResultPanel({
               title="Ваш город"
               score={formatScore(result.finalScore)}
               district={result.weakestDistrict.name}
-              budget={`${budget - result.totalCost} / ${budget}`}
+              budget={`${budget - result.totalCost} / ${budget} усл. ед.`}
               critical={`${result.criticalIndicators.length}`}
               accent="human"
             />
             <ScenarioCard
-              title="AI-сценарий"
+              title="План оптимизатора"
               score={formatScore(aiScenario.finalScore)}
               district={DISTRICTS_BY_ID[aiScenario.weakestDistrictId]?.nameRu ?? "—"}
-              budget={`${aiScenario.remainingBudget} / ${BUDGET}`}
+              budget={`${budget - aiScenario.totalCost} / ${budget} усл. ед.`}
               critical={`${aiScenario.criticalCount}`}
               accent="ai"
             />
@@ -135,7 +141,7 @@ export function ResultPanel({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h3 className="flex items-center gap-2 font-semibold text-ink">
-              <Wand2 className="h-4 w-4 text-green" /> AI-советник: как улучшить план
+              <Wand2 className="h-4 w-4 text-green" /> Поиск замен: как улучшить план
             </h3>
             <p className="mt-1 text-sm text-muted">
               Пошаговый поиск лучших замен в рамках бюджета и правил. Проверено {advice.evaluatedScenarios}{" "}
@@ -150,7 +156,7 @@ export function ResultPanel({
         </div>
         {advice.steps.length === 0 ? (
           <p className="mt-4 rounded-xl bg-surface-2 px-4 py-3 text-sm text-ink">
-            Ваш план уже локально оптимален: ни одна замена меры или района не повышает Score.
+            {narrative.tradeoff}
           </p>
         ) : (
           <>
@@ -169,8 +175,9 @@ export function ResultPanel({
             </ol>
             <button
               type="button"
+              disabled={busy}
               onClick={onApplyAdvice}
-              className="mt-4 h-11 rounded-xl bg-green px-5 text-sm font-semibold text-white transition hover:bg-green-dark"
+              className="mt-4 h-11 rounded-xl bg-green px-5 text-sm font-semibold text-white transition hover:bg-green-dark disabled:cursor-not-allowed disabled:opacity-50"
             >
               Применить улучшенный план
             </button>
@@ -211,15 +218,15 @@ export function ResultPanel({
         </div>
       </div>
 
-      {analysis && analysis.analysis.synergyExplanation.length > 0 ? (
+      {result.activatedSynergies.length > 0 ? (
         <div className="rounded-2xl border border-green/30 bg-green-soft/60 p-6">
           <p className="flex items-center gap-2 font-semibold text-green-dark">
             <Sparkles className="h-4 w-4" />
-            {result.activatedSynergies.length > 0 ? "Сработала синергия" : "Упущенная синергия"}
+            Сработала синергия
           </p>
-          {analysis.analysis.synergyExplanation.map((text) => (
-            <p key={text} className="mt-2 text-sm leading-6 text-ink">
-              {text}
+          {result.activatedSynergies.map((synergy) => (
+            <p key={synergy.id} className="mt-2 text-sm leading-6 text-ink">
+              {synergy.title}: {synergy.indicator} +{synergy.bonus} в районе {DISTRICTS_BY_ID[synergy.districtId].nameRu}. Бонус не уменьшается из-за лага.
             </p>
           ))}
         </div>
@@ -227,7 +234,7 @@ export function ResultPanel({
 
       <div className="panel rounded-2xl p-6">
         <h3 className="flex items-center gap-2 font-semibold text-ink">
-          <Bot className="h-4 w-4 text-green" /> AI Council — виртуальное совещание акимата
+          <Scale className="h-4 w-4 text-green" /> Обзор пяти направлений по расчёту
         </h3>
         <div className="mt-4 space-y-3">
           {council.map((item) => (
@@ -238,20 +245,18 @@ export function ResultPanel({
           ))}
         </div>
         <div className="mt-4 rounded-xl border border-green/30 bg-green-soft/50 px-4 py-3 text-sm leading-6 text-ink">
-          <span className="font-semibold text-green-dark">AI Chief Analyst:</span> Компромисс вашего сценария в том,
-          что сильный социальный эффект в Нуре заметно усиливает слабый район, но сокращает запас на более крупную
-          транспортную перестройку в Есиле.
+          <span className="font-semibold text-green-dark">Возможности улучшения:</span> {narrative.tradeoff}
         </div>
       </div>
 
       {event ? (
         <div className="rounded-2xl border border-rose/25 bg-rose/5 p-5 text-sm leading-6 text-ink">
           <span className="font-semibold text-rose">Городское событие · {event.title}.</span> Из бюджета изъято{" "}
-          {event.reserve} млрд ₸, лимит сократился до {budget} млрд ₸.
+          {event.reserve} усл. ед., лимит сократился до {budget} усл. ед.
         </div>
       ) : null}
 
-      <Leaderboard entries={leaderboard} currentId={currentEntryId} onClear={onClearLeaderboard} />
+      <Leaderboard entries={leaderboard} currentId={currentEntryId} busy={busy} onClear={onClearLeaderboard} />
 
       <div className="flex flex-wrap justify-center gap-3 pt-2">
         <button
@@ -264,8 +269,9 @@ export function ResultPanel({
         </button>
         <button
           type="button"
+          disabled={busy}
           onClick={onReset}
-          className="h-11 rounded-xl border border-line bg-surface px-6 text-sm font-semibold text-ink transition hover:border-green"
+          className="h-11 rounded-xl border border-line bg-surface px-6 text-sm font-semibold text-ink transition hover:border-green disabled:cursor-not-allowed disabled:opacity-50"
         >
           Сыграть ещё раз
         </button>
@@ -292,7 +298,7 @@ function AnalysisCard({ analysis }: { analysis: AnalysisOutcome | null }) {
               analysis.source === "llm" ? "bg-green text-white" : "bg-surface-2 text-muted",
             )}
           >
-            {analysis.source === "llm" ? "LLM-аналитик" : "Встроенный аналитик · без API-ключа"}
+            {analysis.source === "llm" ? "LLM-аналитик" : "Резервный разбор по правилам · без LLM"}
           </span>
         ) : null}
       </div>
@@ -354,7 +360,7 @@ function ScenarioCard({
       <div className="mt-4 space-y-2 text-sm text-muted">
         <div className="flex justify-between gap-3"><span>Слабый район</span><span className="font-medium text-ink">{district}</span></div>
         <div className="flex justify-between gap-3"><span>Критических</span><span className="font-medium text-ink">{critical}</span></div>
-        <div className="flex justify-between gap-3"><span>Бюджет</span><span className="font-medium text-ink">{budget}</span></div>
+        <div className="flex justify-between gap-3"><span>Остаток / лимит</span><span className="font-medium text-ink">{budget}</span></div>
       </div>
     </div>
   );
@@ -409,10 +415,12 @@ function Block({
 function Leaderboard({
   entries,
   currentId,
+  busy,
   onClear,
 }: {
   entries: LeaderboardEntry[];
   currentId: string | null;
+  busy: boolean;
   onClear: () => void;
 }) {
   if (entries.length === 0) return null;
@@ -422,11 +430,11 @@ function Leaderboard({
         <h3 className="flex items-center gap-2 font-semibold text-ink">
           <Trophy className="h-4 w-4 text-green" /> Сравнение команд
         </h3>
-        <button type="button" onClick={onClear} className="text-xs text-muted transition hover:text-rose">
+        <button type="button" disabled={busy} onClick={onClear} className="text-xs text-muted transition hover:text-rose disabled:cursor-not-allowed disabled:opacity-50">
           Очистить
         </button>
       </div>
-      <p className="mt-1 text-sm text-muted">Сравнивайте результаты с учётом выбранного бюджета и городских событий.</p>
+      <p className="mt-1 text-sm text-muted">Результаты в этом браузере. Показаны команды с одинаковым бюджетом и событием.</p>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -452,7 +460,7 @@ function Leaderboard({
                 <td className="py-2 pr-3 text-right tabular-nums text-ink">{formatScore(entry.score)}</td>
                 <td className="py-2 pr-3 text-right tabular-nums text-green">{formatDelta(entry.delta)}</td>
                 <td className="py-2 text-right tabular-nums text-muted">
-                  {entry.spent}/{entry.budget} млрд ₸
+                  {entry.spent}/{entry.budget} усл. ед.
                 </td>
               </tr>
             ))}

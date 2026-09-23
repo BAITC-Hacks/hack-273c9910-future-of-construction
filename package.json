@@ -2,16 +2,20 @@
   "name": "akim-5-hours",
   "version": "1.0.0",
   "private": true,
-  "engines": {
-    "node": ">=22.13.0"
-  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "smoke:auth": "node scripts/check-auth.mjs",
+    "smoke:model": "node scripts/check-model.mjs",
+    "smoke": "npm run smoke:auth && npm run smoke:model"
+  },
+  "engines": {
+    "node": ">=24 <25"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

@@ -18,6 +18,7 @@ export class OpenAiCompatibleProvider implements LlmProvider {
     private readonly apiKey = process.env.OPENAI_API_KEY,
     private readonly baseUrl = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1",
     private readonly model = process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+    private readonly timeoutMs = 15_000,
   ) {}
 
   isConfigured(): boolean {
@@ -31,6 +32,7 @@ export class OpenAiCompatibleProvider implements LlmProvider {
 
     const response = await fetch(`${this.baseUrl.replace(/\/$/, "")}/chat/completions`, {
       method: "POST",
+      signal: AbortSignal.timeout(this.timeoutMs),
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${this.apiKey}`,
@@ -38,22 +40,22 @@ export class OpenAiCompatibleProvider implements LlmProvider {
       body: JSON.stringify({
         model: this.model,
         temperature: input.temperature ?? 0.2,
+        max_completion_tokens: 1800,
         response_format: { type: "json_object" },
         messages: input.messages,
       }),
     });
 
     if (!response.ok) {
-      const details = await response.text();
-      throw new Error(`AI provider request failed: ${response.status} ${details}`);
+      throw new Error(`AI provider request failed: ${response.status}`);
     }
 
     const payload = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
+      choices?: Array<{ finish_reason?: string; message?: { content?: string } }>;
     };
 
     const content = payload.choices?.[0]?.message?.content;
-    if (!content) {
+    if (!content || payload.choices?.[0]?.finish_reason === "length") {
       throw new Error("AI provider returned an empty response.");
     }
 

@@ -1,3 +1,4 @@
+import { BUDGET } from "@/domain/constants";
 import type { Decision, DistrictId } from "@/domain/types";
 
 export type CityEvent = {
@@ -36,6 +37,20 @@ export const CITY_EVENTS: CityEvent[] = [
     reserve: 6,
   },
 ];
+
+export const CITY_EVENT_IDS = CITY_EVENTS.map((event) => event.id) as [
+  string,
+  ...string[],
+];
+
+export function getScenarioBudget(eventId?: string | null): number {
+  if (eventId === undefined || eventId === null) return BUDGET;
+
+  const event = CITY_EVENTS.find((candidate) => candidate.id === eventId);
+  if (!event) throw new Error(`Неизвестное городское событие: ${eventId}.`);
+
+  return BUDGET - event.reserve;
+}
 
 export function pickCityEvent(decisions: Decision[]): CityEvent {
   const key = decisions

@@ -46,7 +46,7 @@ export function Receipt({
         <div className="flex flex-col items-center text-center">
           <ReceiptIcon className="h-6 w-6 text-green" />
           <h2 className="mt-2 text-xl font-bold text-ink">Ваш чек решений</h2>
-          <p className="mt-1 text-sm text-muted">Бюджет сценария · {budget} млрд ₸</p>
+          <p className="mt-1 text-sm text-muted">Виртуальный бюджет · {budget} усл. ед.</p>
         </div>
 
         <div className="mt-5 grid grid-cols-3 gap-2">
@@ -54,6 +54,7 @@ export function Receipt({
             <button
               key={id}
               type="button"
+              disabled={busy}
               onClick={() => setAvatar(id)}
               aria-pressed={avatar === id}
               className={cn(
@@ -71,6 +72,7 @@ export function Receipt({
           <Users className="h-4 w-4 text-muted" />
           <input
             value={team}
+            disabled={busy}
             onChange={(event) => onTeamChange(event.target.value)}
             placeholder="Название команды"
             aria-label="Название команды"
@@ -100,7 +102,7 @@ export function Receipt({
                         : DISTRICTS_BY_ID[decision.districtId].nameRu}
                     </p>
                   </div>
-                  <p className="whitespace-nowrap font-semibold tabular-nums text-ink">{measure.cost} млрд ₸</p>
+                  <p className="whitespace-nowrap font-semibold tabular-nums text-ink">{measure.cost} усл. ед.</p>
                 </li>
               );
             })}
@@ -110,7 +112,7 @@ export function Receipt({
                   <p className="font-medium">Резерв: {event.title}</p>
                   <p className="text-xs opacity-80">Городское событие</p>
                 </div>
-                <p className="whitespace-nowrap font-semibold tabular-nums">−{event.reserve} млрд ₸</p>
+                <p className="whitespace-nowrap font-semibold tabular-nums">−{event.reserve} усл. ед.</p>
               </li>
             ) : null}
           </ul>
@@ -144,23 +146,23 @@ export function Receipt({
           </div>
           <div className="flex justify-between">
             <span className="text-muted">Доступный лимит</span>
-            <span className="font-semibold tabular-nums">{budget} млрд ₸</span>
+            <span className="font-semibold tabular-nums">{budget} усл. ед.</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted">Остаток</span>
             <span className={cn("font-semibold tabular-nums", overBudget && "text-rose")}>
-              {budget - spent} млрд ₸
+              {budget - spent} усл. ед.
             </span>
           </div>
           <div className="flex justify-between pt-1 text-base">
             <span className="font-bold">Итого</span>
-            <span className="font-bold tabular-nums text-green-dark">{spent} млрд ₸</span>
+            <span className="font-bold tabular-nums text-green-dark">{spent} усл. ед.</span>
           </div>
         </div>
 
         {overBudget ? (
           <p className="mt-4 rounded-xl bg-rose/10 px-3 py-2 text-xs leading-5 text-rose">
-            План превышает доступный бюджет на {spent - budget} млрд ₸. Отмените одну из мер и
+            План превышает бюджет на {spent - budget} усл. ед. Отмените одну из мер и
             перераспределите средства.
           </p>
         ) : null}
@@ -173,7 +175,7 @@ export function Receipt({
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
           {busy
-            ? "AI анализирует сценарий…"
+            ? "Рассчитываем сценарий…"
             : overBudget
               ? "Превышен бюджет"
               : ready
@@ -183,14 +185,15 @@ export function Receipt({
         {decisions.length > 0 ? (
           <button
             type="button"
+            disabled={busy}
             onClick={onReset}
-            className="mt-2 h-10 w-full rounded-xl text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-ink"
+            className="mt-2 h-10 w-full rounded-xl text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
           >
             Начать заново
           </button>
         ) : null}
         <p className="mt-4 text-center text-xs leading-5 text-muted">
-          1 единица модели = 1 млрд ₸. Остаток бонуса не даёт, порядок решений не важен.
+          Все цены условные. Остаток бонуса не даёт, порядок решений не важен.
         </p>
       </div>
     </section>

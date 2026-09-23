@@ -70,7 +70,7 @@ export function MeasureTile({
         </div>
         <div className="text-right">
           <p className="text-[28px] font-bold leading-8 tracking-tight tabular-nums text-ink">{measure.cost}</p>
-          <p className="text-[11px] uppercase tracking-[0.14em] text-muted">млрд ₸</p>
+          <p className="text-[11px] uppercase tracking-[0.14em] text-muted">усл. ед.</p>
         </div>
       </div>
 
@@ -89,7 +89,8 @@ export function MeasureTile({
         </span>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
+      <p className="mt-3 text-[11px] font-medium text-muted">Полные эффекты до учёта лага</p>
+      <div className="mt-1 flex flex-wrap gap-1.5">
         {Object.entries(measure.effects).map(([key, value]) => (
           <span
             key={key}
@@ -104,7 +105,7 @@ export function MeasureTile({
       </div>
 
       <div className="simulator-impact-preview">
-        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-green"><Sparkles size={12} /> Прогноз влияния</p>
+        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-green"><Sparkles size={12} /> Эффект модели за 2 года</p>
         <p className="mt-1 text-xs leading-5 text-ink">{preview.summary}</p>
       </div>
 

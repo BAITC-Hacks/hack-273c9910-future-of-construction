@@ -1,4 +1,7 @@
 import type { Decision, SimulationResult } from "@/domain/types";
+import { getScenarioBudget } from "@/data/events";
+import { simulateDecisions } from "@/engine/simulation";
+import { simulateRequestSchema } from "./schemas";
 
 export const DECISIONS_KEY = "akim-decisions";
 export const RESULT_KEY = "akim-result";
@@ -16,21 +19,29 @@ export function loadDecisions(): Decision[] {
 }
 
 export function saveDecisions(decisions: Decision[]): void {
-  sessionStorage.setItem(DECISIONS_KEY, JSON.stringify(decisions));
+  saveSessionValue(DECISIONS_KEY, decisions);
 }
 
 export function loadResult(): SimulationResult | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = sessionStorage.getItem(RESULT_KEY);
-    return raw ? (JSON.parse(raw) as SimulationResult) : null;
+    if (!raw) return null;
+    const stored = JSON.parse(raw);
+    const parsed = simulateRequestSchema.safeParse({ decisions: stored?.decisions, eventId: stored?.eventId ?? null });
+    return parsed.success ? simulateDecisions(parsed.data.decisions, getScenarioBudget(parsed.data.eventId)) : null;
   } catch {
     return null;
   }
 }
 
-export function saveResult(result: SimulationResult): void {
-  sessionStorage.setItem(RESULT_KEY, JSON.stringify(result));
+export function saveResult(result: SimulationResult, eventId: string | null = null): void {
+  saveSessionValue(RESULT_KEY, { ...result, eventId });
+}
+
+export function loadResultEventId(): string | null {
+  const stored = loadSessionValue<{ eventId?: string } | null>(RESULT_KEY, null);
+  return stored?.eventId ?? null;
 }
 
 export const EVENT_MODE_KEY = "akim-event-mode";
@@ -47,13 +58,15 @@ export function loadSessionValue<T>(key: string, fallback: T): T {
 }
 
 export function saveSessionValue(key: string, value: unknown): void {
-  sessionStorage.setItem(key, JSON.stringify(value));
+  try { sessionStorage.setItem(key, JSON.stringify(value)); } catch { /* The current game remains usable when storage is disabled. */ }
 }
 
 export function clearSession(): void {
-  sessionStorage.removeItem(DECISIONS_KEY);
-  sessionStorage.removeItem(RESULT_KEY);
-  sessionStorage.removeItem(EVENT_KEY);
+  try {
+    sessionStorage.removeItem(DECISIONS_KEY);
+    sessionStorage.removeItem(RESULT_KEY);
+    sessionStorage.removeItem(EVENT_KEY);
+  } catch { /* The caller resets in-memory state. */ }
 }
 
 export function toAnalyzeDto(result: SimulationResult) {
@@ -76,6 +89,9 @@ export function toAnalyzeDto(result: SimulationResult) {
     comparisons: result.comparisons.map((item) => ({
       id: item.id,
       nameRu: item.nameRu,
+      before: item.before,
+      after: item.after,
+      delta: item.delta,
       scoreBefore: item.scoreBefore,
       scoreAfter: item.scoreAfter,
       scoreDelta: item.scoreDelta,
@@ -87,6 +103,8 @@ export function toAnalyzeDto(result: SimulationResult) {
       scope: item.scope,
       districtId: item.districtId,
       cost: item.cost,
+      lag: item.lag,
+      realizedFactor: item.realizedFactor,
       effects: item.effects,
     })),
     scoreBefore: {

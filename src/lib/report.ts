@@ -27,17 +27,19 @@ export function buildReportMarkdown(input: ReportInput): string {
     "",
     `## Astana Quality of Life Score: ${formatScore(result.finalScore)} (${formatDelta(result.scoreDelta)})`,
     "",
-    `Старт: ${formatScore(result.scoreBefore.finalScore)} · Потрачено: ${result.totalCost} из ${budget} млрд ₸ · Критических провалов: ${result.scoreBefore.criticalCount} → ${result.criticalIndicators.length}`,
-    event ? `\nГородское событие: **${event.title}** — изъято ${event.reserve} млрд ₸.` : "",
+    `Старт: ${formatScore(result.scoreBefore.finalScore)} · Потрачено: ${result.totalCost} из ${budget} усл. ед. · Остаток: ${budget - result.totalCost} усл. ед. · Критических провалов: ${result.scoreBefore.criticalCount} → ${result.criticalIndicators.length}`,
+    "Данные синтетические; цены выражены в условных единицах без пересчёта в реальную валюту. Горизонт: 8 кварталов. Остаток бюджета не даёт бонуса.",
+    event ? `\nГородское событие: **${event.title}** — резерв ${event.reserve} усл. ед.; доступный лимит ${budget} усл. ед.` : "Городское событие: нет.",
     "",
     "## 5 решений",
     "",
-    "| # | Мера | Где | Стоимость |",
-    "|---|---|---|---:|",
+    "| # | Мера | Где | Стоимость | Лаг, кв. | Доля эффекта |",
+    "|---|---|---|---:|---:|---:|",
     ...result.decisions.map((decision, index) => {
       const measure = MEASURES_BY_ID[decision.measureId];
       const place = decision.scope === "city" ? "Весь город" : DISTRICTS_BY_ID[decision.districtId].nameRu;
-      return `| ${index + 1} | ${measure.name} | ${place} | ${measure.cost} млрд ₸ |`;
+      const contribution = result.measureContributions.find((item) => item.measureId === decision.measureId);
+      return `| ${index + 1} | ${measure.name} | ${place} | ${contribution?.cost ?? measure.cost} усл. ед. | ${contribution?.lag ?? measure.lag} | ${contribution ? `${contribution.realizedFactor * 100}%` : "—"} |`;
     }),
     "",
     "## Районы до и после",
@@ -49,7 +51,7 @@ export function buildReportMarkdown(input: ReportInput): string {
         `| ${item.nameRu} | ${formatScore(item.scoreBefore)} | ${formatScore(item.scoreAfter)} | ${formatDelta(item.scoreDelta)} |`,
     ),
     "",
-    `## Вывод ${input.analysisSource === "llm" ? "AI-аналитика" : "аналитика"}`,
+    `## Вывод ${input.analysisSource === "llm" ? "AI-аналитика (LLM)" : "резервного аналитика по правилам (без LLM)"}`,
     "",
     analysis.summary,
     "",
@@ -66,7 +68,7 @@ export function buildReportMarkdown(input: ReportInput): string {
     bullets(analysis.recommendations),
     "",
     advice.steps.length > 0
-      ? `Улучшенный план советника: ${formatScore(advice.startScore)} → ${formatScore(advice.finalScore)}.`
+      ? `Улучшенный план поиска замен: ${formatScore(advice.startScore)} → ${formatScore(advice.finalScore)}.`
       : "",
     "",
     "_Все числа рассчитаны детерминированным движком симуляции; AI только объясняет результат._",

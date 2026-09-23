@@ -1,17 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Source_Serif_4 } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
-
-const manrope = Manrope({
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-manrope",
-});
-
-const sourceSerif = Source_Serif_4({
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-source-serif",
-});
 
 export const metadata: Metadata = {
   title: { default: "Аким — город начинается с вас", template: "%s · Аким" },
@@ -32,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body className={`${manrope.variable} ${sourceSerif.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         {children}
       </body>
     </html>

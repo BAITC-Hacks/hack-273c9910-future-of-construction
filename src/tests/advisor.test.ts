@@ -56,7 +56,7 @@ describe("local analyst", () => {
   it("flags unfunded directions as a risk", () => {
     const result = simulateDecisions(CONTROL_SCENARIO);
     const analysis = buildLocalAnalysis({ result, advice: adviseImprovements(CONTROL_SCENARIO), budget: 100 });
-    expect(analysis.risks.some((risk) => risk.includes("Без финансирования") && risk.includes("Транспорт"))).toBe(
+    expect(analysis.risks.some((risk) => risk.includes("не выбраны") && risk.includes("Транспорт"))).toBe(
       true,
     );
   });

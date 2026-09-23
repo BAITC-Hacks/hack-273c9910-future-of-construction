@@ -74,13 +74,13 @@ function emptyDeltas(): Record<DistrictId, Indicators> {
   return deltas;
 }
 
-export function simulateDecisions(decisions: Decision[]): SimulationResult {
-  const validation = validateDecisions(decisions, "final");
+export function simulateDecisions(decisions: Decision[], budget: number = BUDGET): SimulationResult {
+  const validation = validateDecisions(decisions, "final", budget);
   if (!validation.ok) {
     throw new SimulationError(validation.errors.map((error) => error.message));
   }
 
-  return applyScenario(decisions);
+  return applyScenario(decisions, budget);
 }
 
 export function baselineDistricts(): DistrictSnapshot[] {
@@ -89,13 +89,13 @@ export function baselineDistricts(): DistrictSnapshot[] {
   );
 }
 
-export function previewDecisions(decisions: Decision[]): SimulationResult {
-  const validation = validateDecisions(decisions, "partial");
+export function previewDecisions(decisions: Decision[], budget: number = BUDGET): SimulationResult {
+  const validation = validateDecisions(decisions, "partial", budget);
   if (!validation.ok) {
     throw new SimulationError(validation.errors.map((error) => error.message));
   }
 
-  return applyScenario(decisions);
+  return applyScenario(decisions, budget);
 }
 
 export type ScenarioSummary = {
@@ -110,8 +110,8 @@ export type ScenarioSummary = {
   activatedSynergies: string[];
 };
 
-export function summarizeScenario(decisions: Decision[]): ScenarioSummary {
-  const result = applyScenario(decisions);
+export function summarizeScenario(decisions: Decision[], budget: number = BUDGET): ScenarioSummary {
+  const result = simulateDecisions(decisions, budget);
   return {
     decisions,
     totalCost: result.totalCost,
@@ -125,7 +125,7 @@ export function summarizeScenario(decisions: Decision[]): ScenarioSummary {
   };
 }
 
-function applyScenario(decisions: Decision[]): SimulationResult {
+function applyScenario(decisions: Decision[], budget: number): SimulationResult {
   const deltas = emptyDeltas();
   const appliedEffects: AppliedEffect[] = [];
   const measureContributions: MeasureContribution[] = [];
@@ -261,7 +261,7 @@ function applyScenario(decisions: Decision[]): SimulationResult {
     measureContributions,
     activatedSynergies,
     totalCost,
-    remainingBudget: BUDGET - totalCost,
+    remainingBudget: budget - totalCost,
     scoreBefore,
     scoreAfter,
     finalScore: scoreAfter.finalScore,

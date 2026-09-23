@@ -110,6 +110,6 @@ export function scoreDecisionsFast(decisions: Decision[]): FastScore {
   };
 }
 
-export function remainingBudget(totalCost: number): number {
-  return BUDGET - totalCost;
+export function remainingBudget(totalCost: number, budget: number = BUDGET): number {
+  return budget - totalCost;
 }

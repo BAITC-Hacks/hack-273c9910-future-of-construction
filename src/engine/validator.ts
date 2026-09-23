@@ -38,6 +38,10 @@ export function validateDecisions(
 ): ValidationResult {
   const errors: ValidationError[] = [];
 
+  if (!Number.isFinite(budget) || budget < 0) {
+    addError(errors, "INVALID_BUDGET", "Бюджет должен быть конечным неотрицательным числом.");
+  }
+
   if (mode === "final" && decisions.length !== REQUIRED_DECISIONS) {
     addError(
       errors,
@@ -60,7 +64,28 @@ export function validateDecisions(
   let totalCost = 0;
 
   for (const decision of decisions) {
-    const measure = MEASURES_BY_ID[decision.measureId];
+    if (!decision || typeof decision !== "object" || Array.isArray(decision)) {
+      addError(errors, "INVALID_DECISION", "Решение должно быть объектом мероприятия.");
+      continue;
+    }
+
+    const allowedFields = decision.scope === "district"
+      ? ["measureId", "scope", "districtId"]
+      : ["measureId", "scope"];
+    const extraFields = Object.keys(decision).filter((key) => !allowedFields.includes(key));
+    if (extraFields.length > 0) {
+      addError(
+        errors,
+        "UNEXPECTED_FIELDS",
+        decision.scope === "city" && extraFields.includes("districtId")
+          ? "Для городского мероприятия район не указывается."
+          : `Недопустимые поля решения: ${extraFields.join(", ")}.`,
+      );
+    }
+
+    const measure = Object.prototype.hasOwnProperty.call(MEASURES_BY_ID, decision.measureId)
+      ? MEASURES_BY_ID[decision.measureId]
+      : undefined;
     if (!measure) {
       addError(
         errors,
@@ -90,7 +115,9 @@ export function validateDecisions(
     }
 
     if (decision.scope === "district") {
-      const district = DISTRICTS_BY_ID[decision.districtId];
+      const district = Object.prototype.hasOwnProperty.call(DISTRICTS_BY_ID, decision.districtId)
+        ? DISTRICTS_BY_ID[decision.districtId]
+        : undefined;
       if (!district) {
         addError(
           errors,
@@ -122,11 +149,11 @@ export function validateDecisions(
     addError(
       errors,
       "BUDGET",
-      `Бюджет превышен: потрачено ${totalCost} млрд ₸ при лимите ${budget} млрд ₸.`,
+      `Бюджет превышен: потрачено ${totalCost} усл. ед. при лимите ${budget} усл. ед.`,
     );
   }
 
-  const selected = new Set(decisions.map((decision) => decision.measureId));
+  const selected = seen;
 
   for (const rule of GLOBAL_INCOMPATIBILITIES) {
     const [a, b] = rule.measureIds;

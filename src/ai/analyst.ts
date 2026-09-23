@@ -2,6 +2,7 @@ import type { AiAnalysis } from "@/domain/types";
 import { aiAnalysisSchema } from "@/lib/schemas";
 import { ANALYST_SYSTEM_PROMPT, buildAnalystUserPrompt } from "./prompts";
 import { defaultProvider, type LlmProvider } from "./provider";
+import { hasGroundedNumbers } from "./grounding";
 
 export const AI_UNAVAILABLE_MESSAGE =
   "AI-анализ временно недоступен. Расчёт симуляции выполнен успешно.";
@@ -33,6 +34,7 @@ export async function analyzeSimulation(
       ],
     });
     const parsed = aiAnalysisSchema.parse(extractJson(content));
+    if (!hasGroundedNumbers(parsed, payload)) return { ok: false, message: AI_UNAVAILABLE_MESSAGE };
     return { ok: true, analysis: parsed };
   } catch {
     return { ok: false, message: AI_UNAVAILABLE_MESSAGE };

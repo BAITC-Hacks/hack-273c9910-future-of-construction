@@ -121,4 +121,34 @@ describe("validateDecisions", () => {
       expect(result.errors.some((error) => error.code === "SCOPE_MISMATCH")).toBe(true);
     }
   });
+
+  it("rejects a district field on a city decision even when scope is city", () => {
+    const result = validateDecisions(
+      [{ measureId: "M12", scope: "city", districtId: "nura" } as unknown as Decision],
+      "partial",
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.some((error) => error.code === "UNEXPECTED_FIELDS")).toBe(true);
+    }
+  });
+
+  it("rejects extra fields in raw decisions instead of ignoring them", () => {
+    const result = validateDecisions(
+      [{ measureId: "M7", scope: "district", districtId: "nura", cost: 0 } as unknown as Decision],
+      "partial",
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("accepts the exact available budget and rejects one unit less", () => {
+    expect(validateDecisions(control, "final", 95)).toEqual({ ok: true });
+    const result = validateDecisions(control, "final", 94);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.map((error) => error.code)).toContain("BUDGET");
+  });
+
+  it.each([NaN, Infinity, -1])("rejects invalid budget %s", (budget) => {
+    expect(validateDecisions(control, "final", budget).ok).toBe(false);
+  });
 });

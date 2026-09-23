@@ -6,9 +6,10 @@ import type { AiAnalysis, AlternativeScenario, SimulationResult } from "@/domain
 import { INDICATOR_LABELS } from "@/domain/constants";
 import { MEASURES_BY_ID } from "@/data/measures";
 import { DISTRICTS_BY_ID } from "@/data/districts";
+import { CITY_EVENTS } from "@/data/events";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { loadResult, saveDecisions, toAnalyzeDto } from "@/lib/session";
+import { EVENT_KEY, EVENT_MODE_KEY, loadResult, loadResultEventId, saveDecisions, saveSessionValue } from "@/lib/session";
 import { formatDelta, formatIndicator, formatScore } from "@/lib/utils";
 import {
   Bar,
@@ -23,6 +24,7 @@ import {
 
 export function ResultsApp() {
   const [result, setResult] = useState<SimulationResult | null>(null);
+  const [resultEventId, setResultEventId] = useState<string | null>(null);
   const [openDistrict, setOpenDistrict] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<AiAnalysis | null>(null);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
@@ -33,6 +35,7 @@ export function ResultsApp() {
 
   useEffect(() => {
     setResult(loadResult());
+    setResultEventId(loadResultEventId());
   }, []);
 
   const chartData = useMemo(
@@ -65,7 +68,8 @@ export function ResultsApp() {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(toAnalyzeDto(result)),
+        body: JSON.stringify({ decisions: result.decisions, eventId: resultEventId }),
+        signal: AbortSignal.timeout(20_000),
       });
       const payload = await response.json();
       if (!payload.ok) {
@@ -74,6 +78,7 @@ export function ResultsApp() {
         return;
       }
       setAnalysis(payload.analysis);
+      setAiMessage(payload.source === "local" ? "Встроенный аналитик: объяснение сформировано по рассчитанным показателям без LLM." : null);
     } catch {
       setAiMessage("AI-анализ временно недоступен. Расчёт симуляции выполнен успешно.");
     } finally {
@@ -85,7 +90,7 @@ export function ResultsApp() {
     setOptimizeLoading(true);
     setOptimizeError(null);
     try {
-      const response = await fetch("/api/optimize", { method: "POST" });
+      const response = await fetch("/api/optimize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: resultEventId }), signal: AbortSignal.timeout(20_000) });
       const payload = await response.json();
       if (!payload.ok) {
         setOptimizeError(payload.message ?? "Оптимизатор недоступен.");
@@ -302,6 +307,8 @@ export function ResultsApp() {
                   variant="ghost"
                   onClick={() => {
                     saveDecisions(scenario.decisions);
+                    saveSessionValue(EVENT_MODE_KEY, resultEventId !== null);
+                    saveSessionValue(EVENT_KEY, CITY_EVENTS.find((event) => event.id === resultEventId) ?? null);
                     window.location.href = "/simulator";
                   }}
                 >

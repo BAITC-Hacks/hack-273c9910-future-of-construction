@@ -15,8 +15,7 @@ import type {
 } from "@/domain/types";
 import { DISTRICTS_BY_ID } from "@/data/districts";
 import type { CityEvent } from "@/data/events";
-import { MEASURES, MEASURES_BY_ID } from "@/data/measures";
-import { SYNERGIES } from "@/data/synergies";
+import { MEASURES_BY_ID } from "@/data/measures";
 import type { Advice } from "@/engine/advisor";
 import { formatDelta, formatScore } from "@/lib/utils";
 
@@ -63,14 +62,14 @@ export function buildLocalAnalysis({ result, advice, budget, event }: LocalAnaly
 
   const summary = [
     `Сценарий меняет Astana Quality of Life Score с ${formatScore(result.scoreBefore.finalScore)} до ${formatScore(result.finalScore)} (${formatDelta(result.scoreDelta)}).`,
-    `Потрачено ${result.totalCost} из ${budget} млрд ₸.`,
+    `Потрачено ${result.totalCost} из ${budget} усл. ед.`,
     leader && leader.scoreDelta > 0
       ? `Сильнее всего выиграл район ${leader.nameRu} (${formatDelta(leader.scoreDelta)}).`
       : "",
     fixed.length > 0
       ? `Снято критических провалов: ${fixed.length} из ${result.scoreBefore.criticalCount}.`
       : result.scoreBefore.criticalCount > 0
-        ? "Критические провалы города остались без ответа."
+        ? "Исходные критические показатели пока остаются ниже порога 40."
         : "",
   ]
     .filter(Boolean)
@@ -88,7 +87,7 @@ export function buildLocalAnalysis({ result, advice, budget, event }: LocalAnaly
   }
   if (weakestComparison && weakestComparison.scoreDelta > 0.5) {
     strengths.push(
-      `Самый слабый район (${weakestComparison.nameRu}) вырос на ${formatDelta(weakestComparison.scoreDelta)} — это напрямую усиливает справедливую часть формулы (30% веса).`,
+      `Исходно самый слабый район (${weakestComparison.nameRu}) вырос на ${formatDelta(weakestComparison.scoreDelta)}. После решений минимальная оценка района равна ${formatScore(result.weakestDistrict.score)}; она входит в Score с весом 30%.`,
     );
   }
   const quick = result.measureContributions.filter((item) => item.lag <= 1);
@@ -110,12 +109,12 @@ export function buildLocalAnalysis({ result, advice, budget, event }: LocalAnaly
   }
   const unused = budget - result.totalCost;
   if (unused >= 5) {
-    risks.push(`Не использовано ${unused} млрд ₸ — остаток не влияет на Score, а деньги могли бы закрыть ещё одну проблему.`);
+    tradeoffs.push(`Осталось ${unused} усл. ед. Остаток не даёт бонуса; улучшение возможно только заменами внутри пяти решений.`);
   }
   for (const item of result.measureContributions) {
     if (item.realizedFactor < 0.7) {
       risks.push(
-        `«${MEASURES_BY_ID[item.measureId].name}» запускается через ${item.lag} кв.: за ${SIMULATION_HORIZON} кварталов реализуется только ${Math.round(item.realizedFactor * 100)}% эффекта.`,
+        `«${MEASURES_BY_ID[item.measureId].name}» запускается через ${item.lag} кв.: за ${SIMULATION_HORIZON} кварталов реализуется ${item.realizedFactor * 100}% полного эффекта.`,
       );
     }
   }
@@ -131,13 +130,13 @@ export function buildLocalAnalysis({ result, advice, budget, event }: LocalAnaly
   const missing = CATEGORIES.filter((category) => !covered.has(category));
   if (missing.length > 0) {
     risks.push(
-      `Без финансирования остались направления: ${listRu(missing.map((category) => CATEGORY_LABELS[category]))}. Их показатели не изменятся.`,
+      `Прямые меры не выбраны в направлениях: ${listRu(missing.map((category) => CATEGORY_LABELS[category]))}. Их показатели могут меняться из-за эффектов мер других направлений.`,
     );
   }
-  const untouched = result.comparisons.filter((item) => item.scoreDelta < 0.3);
+  const untouched = result.comparisons.filter((item) => Math.abs(item.scoreDelta) < 0.3);
   if (untouched.length > 0) {
     risks.push(
-      `Почти без изменений: ${listRu(untouched.map((item) => item.nameRu))} — жители этих районов не почувствуют решений.`,
+      `Изменение оценки менее 0,3 балла: ${listRu(untouched.map((item) => item.nameRu))}.`,
     );
   }
 
@@ -151,25 +150,25 @@ export function buildLocalAnalysis({ result, advice, budget, event }: LocalAnaly
   for (const [id, names] of perDistrict) {
     if (names.length >= 3) {
       tradeoffs.push(
-        `${names.length} районные меры сосредоточены в районе ${districtName(id)}: сильный локальный эффект ценой остальных районов.`,
+        `${names.length} районные меры сосредоточены в районе ${districtName(id)}; их прямые эффекты не распространяются на остальные районы.`,
       );
     }
   }
   const priciest = [...result.measureContributions].sort((a, b) => b.cost - a.cost)[0];
   if (priciest && priciest.cost / budget >= 0.25) {
     tradeoffs.push(
-      `«${MEASURES_BY_ID[priciest.measureId].name}» забирает ${Math.round((priciest.cost / budget) * 100)}% бюджета — на эти деньги можно было взять 2–3 быстрые меры.`,
+      `«${MEASURES_BY_ID[priciest.measureId].name}» занимает ${Math.round((priciest.cost / budget) * 100)}% бюджета. На остальные решения доступно ${budget - priciest.cost} усл. ед.`,
     );
   }
   const cityCount = result.decisions.filter((decision) => decision.scope === "city").length;
   if (cityCount > 0) {
     tradeoffs.push(
-      `Общегородских мер: ${cityCount}. Они понемногу улучшают все 5 районов, но не вытаскивают отстающих так, как адресные районные меры.`,
+      `Общегородских мер: ${cityCount}. Их эффекты применяются ко всем 5 районам; эффект каждой районной меры ограничен выбранным районом.`,
     );
   }
   if (event) {
     tradeoffs.push(
-      `Событие «${event.title}» изъяло ${event.reserve} млрд ₸: лимит сократился до ${budget} млрд ₸, и план пришлось уложить в меньший бюджет.`,
+      `Событие «${event.title}» резервирует ${event.reserve} усл. ед. Доступный лимит: ${budget} усл. ед.`,
     );
   }
 
@@ -180,37 +179,13 @@ export function buildLocalAnalysis({ result, advice, budget, event }: LocalAnaly
   }
   if (advice.steps.length === 0) {
     recommendations.push(
-      `План локально оптимален: советник проверил ${advice.evaluatedScenarios} вариантов замены, и ни один не повышает Score.`,
+      advice.evaluatedScenarios > 0
+        ? `Поиск проверил ${advice.evaluatedScenarios} вариантов замены и не нашёл улучшений не менее 0,01 балла. Это не доказательство глобального оптимума.`
+        : "Поиск замен ещё не проводился.",
     );
   }
-  const selectedIds = new Set(result.decisions.map((decision) => decision.measureId));
-  const worst = result.criticalIndicators[0];
-  if (worst) {
-    const helper = MEASURES.filter((measure) => !selectedIds.has(measure.id))
-      .filter((measure) => (measure.effects[worst.indicator] ?? 0) > 0)
-      .sort((a, b) => (b.effects[worst.indicator] ?? 0) - (a.effects[worst.indicator] ?? 0))[0];
-    if (helper) {
-      recommendations.push(
-        `Чтобы закрыть провал «${INDICATOR_SHORT_LABELS[worst.indicator]}» в районе ${worst.districtName}, подходит «${helper.name}» (${helper.cost} млрд ₸).`,
-      );
-    }
-  }
-
   for (const synergy of result.activatedSynergies) {
-    synergyExplanation.push(synergy.description);
-  }
-  if (result.activatedSynergies.length === 0) {
-    for (const rule of SYNERGIES) {
-      const [a, b] = rule.measureIds;
-      const hasA = selectedIds.has(a);
-      const hasB = selectedIds.has(b);
-      if (hasA !== hasB) {
-        const missingId = hasA ? b : a;
-        synergyExplanation.push(
-          `Добавив «${MEASURES_BY_ID[missingId].name}», вы активируете синергию «${rule.title}» (+${rule.bonus} к показателю «${INDICATOR_SHORT_LABELS[rule.indicator]}»).`,
-        );
-      }
-    }
+    synergyExplanation.push(`${synergy.title}: ${synergy.indicator} +${synergy.bonus} в районе ${districtName(synergy.districtId)}. Бонус не масштабируется лагом.`);
   }
 
   const districtInsights: DistrictInsight[] = result.comparisons.map((item) => {
@@ -218,7 +193,11 @@ export function buildLocalAnalysis({ result, advice, budget, event }: LocalAnaly
     const critical = item.criticalAfter.map((key) => INDICATOR_SHORT_LABELS[key as IndicatorKey]);
     const parts = [
       `${formatScore(item.scoreBefore)} → ${formatScore(item.scoreAfter)} (${formatDelta(item.scoreDelta)}).`,
-      names.length > 0 ? `Адресные меры: ${names.join(", ")}.` : "Только общегородские меры.",
+      names.length > 0
+        ? `Адресные меры: ${names.join(", ")}.`
+        : cityCount > 0
+          ? "На район действуют только общегородские меры."
+          : "Для района не выбраны меры.",
       critical.length > 0 ? `Остаётся критично: ${critical.join(", ")}.` : "Критических провалов нет.",
     ];
     return { districtId: item.id, text: parts.join(" ") };
@@ -226,7 +205,7 @@ export function buildLocalAnalysis({ result, advice, budget, event }: LocalAnaly
 
   return {
     summary,
-    strengths: strengths.length > 0 ? strengths : ["Сценарий удерживает город без ухудшений."],
+    strengths,
     risks,
     tradeoffs,
     recommendations,

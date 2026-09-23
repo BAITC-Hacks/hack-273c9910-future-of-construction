@@ -35,7 +35,7 @@ export function whyBlocked(
   }
   const left = budget - totalCostOf(decisions);
   if (measure.cost > left) {
-    return `Не хватает бюджета: осталось ${left} млрд ₸.`;
+    return `Не хватает бюджета: осталось ${left} усл. ед.`;
   }
   if (categoryCount(decisions, measure.category) >= MAX_MEASURES_PER_CATEGORY) {
     return "Не больше двух мероприятий одного направления.";
