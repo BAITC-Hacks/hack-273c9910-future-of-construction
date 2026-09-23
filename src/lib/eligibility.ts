@@ -25,6 +25,7 @@ export function whyBlocked(
   decisions: Decision[],
   measure: Measure,
   districtId?: DistrictId,
+  budget: number = BUDGET,
 ): string | null {
   if (decisions.some((decision) => decision.measureId === measure.id)) {
     return "Мероприятие уже выбрано.";
@@ -32,8 +33,9 @@ export function whyBlocked(
   if (decisions.length >= REQUIRED_DECISIONS) {
     return "Можно выбрать только 5 мероприятий.";
   }
-  if (totalCostOf(decisions) + measure.cost > BUDGET) {
-    return "Недостаточно бюджета.";
+  const left = budget - totalCostOf(decisions);
+  if (measure.cost > left) {
+    return `Не хватает бюджета: осталось ${left} млрд ₸.`;
   }
   if (categoryCount(decisions, measure.category) >= MAX_MEASURES_PER_CATEGORY) {
     return "Не больше двух мероприятий одного направления.";
@@ -58,7 +60,7 @@ export function whyBlocked(
       districtId,
     };
     const next = [...decisions, candidate];
-    const validation = validateDecisions(next, "partial");
+    const validation = validateDecisions(next, "partial", budget);
     if (!validation.ok) {
       return validation.errors[0]?.message ?? "Решение недопустимо.";
     }
@@ -68,6 +70,7 @@ export function whyBlocked(
     const validation = validateDecisions(
       [...decisions, { measureId: measure.id, scope: "city" }],
       "partial",
+      budget,
     );
     if (!validation.ok) {
       return validation.errors[0]?.message ?? "Решение недопустимо.";

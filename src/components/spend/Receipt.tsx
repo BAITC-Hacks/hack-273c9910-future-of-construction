@@ -1,21 +1,36 @@
-import { Receipt as ReceiptIcon } from "lucide-react";
-import { BUDGET, REQUIRED_DECISIONS } from "@/domain/constants";
+import { Loader2, Receipt as ReceiptIcon, Users } from "lucide-react";
+import { BUDGET, CATEGORY_LABELS, REQUIRED_DECISIONS } from "@/domain/constants";
+import { CATEGORIES } from "@/domain/types";
 import type { Decision } from "@/domain/types";
 import { DISTRICTS_BY_ID } from "@/data/districts";
+import type { CityEvent } from "@/data/events";
 import { MEASURES_BY_ID } from "@/data/measures";
+import { cn } from "@/lib/utils";
 
 export function Receipt({
   decisions,
   spent,
+  budget,
+  event,
+  team,
+  busy,
+  onTeamChange,
   onFinish,
   onReset,
 }: {
   decisions: Decision[];
   spent: number;
+  budget: number;
+  event: CityEvent | null;
+  team: string;
+  busy: boolean;
+  onTeamChange: (team: string) => void;
   onFinish: () => void;
   onReset: () => void;
 }) {
-  const ready = decisions.length === REQUIRED_DECISIONS;
+  const overBudget = spent > budget;
+  const ready = decisions.length === REQUIRED_DECISIONS && !overBudget;
+  const covered = new Set(decisions.map((decision) => MEASURES_BY_ID[decision.measureId].category));
 
   return (
     <section className="mx-auto w-full max-w-md">
@@ -23,8 +38,19 @@ export function Receipt({
         <div className="flex flex-col items-center text-center">
           <ReceiptIcon className="h-6 w-6 text-green" />
           <h2 className="mt-2 text-xl font-bold text-ink">Ваш чек решений</h2>
-          <p className="text-sm text-muted">Бюджет города Астаны · {BUDGET} единиц</p>
+          <p className="text-sm text-muted">Бюджет Астаны · {BUDGET} млрд ₸</p>
         </div>
+
+        <label className="mt-5 flex items-center gap-2 rounded-xl border border-line bg-surface-2 px-3 py-2 focus-within:border-green">
+          <Users className="h-4 w-4 text-muted" />
+          <input
+            value={team}
+            onChange={(event) => onTeamChange(event.target.value)}
+            placeholder="Название команды"
+            maxLength={40}
+            className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-muted"
+          />
+        </label>
 
         <div className="my-5 border-t border-dashed border-line-strong" />
 
@@ -41,19 +67,46 @@ export function Receipt({
                   <div>
                     <p className="font-medium text-ink">{measure.name}</p>
                     <p className="text-xs text-muted">
+                      {CATEGORY_LABELS[measure.category]} ·{" "}
                       {decision.scope === "city"
                         ? "Весь город"
                         : DISTRICTS_BY_ID[decision.districtId].nameRu}
                     </p>
                   </div>
-                  <p className="font-semibold tabular-nums text-ink">{measure.cost}</p>
+                  <p className="whitespace-nowrap font-semibold tabular-nums text-ink">{measure.cost} млрд ₸</p>
                 </li>
               );
             })}
+            {event ? (
+              <li className="flex items-start justify-between gap-4 text-sm text-rose">
+                <div>
+                  <p className="font-medium">Резерв: {event.title}</p>
+                  <p className="text-xs opacity-80">Городское событие</p>
+                </div>
+                <p className="whitespace-nowrap font-semibold tabular-nums">−{event.reserve} млрд ₸</p>
+              </li>
+            ) : null}
           </ul>
         )}
 
         <div className="my-5 border-t border-dashed border-line-strong" />
+
+        <div className="mb-4">
+          <p className="mb-2 text-xs font-medium text-muted">Направления в плане</p>
+          <div className="flex flex-wrap gap-1.5">
+            {CATEGORIES.map((category) => (
+              <span
+                key={category}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-medium",
+                  covered.has(category) ? "bg-green-soft text-green-dark" : "bg-surface-2 text-muted",
+                )}
+              >
+                {CATEGORY_LABELS[category]}
+              </span>
+            ))}
+          </div>
+        </div>
 
         <div className="space-y-1.5 text-sm">
           <div className="flex justify-between">
@@ -63,22 +116,42 @@ export function Receipt({
             </span>
           </div>
           <div className="flex justify-between">
+            <span className="text-muted">Доступный лимит</span>
+            <span className="font-semibold tabular-nums">{budget} млрд ₸</span>
+          </div>
+          <div className="flex justify-between">
             <span className="text-muted">Остаток</span>
-            <span className="font-semibold tabular-nums">{BUDGET - spent}</span>
+            <span className={cn("font-semibold tabular-nums", overBudget && "text-rose")}>
+              {budget - spent} млрд ₸
+            </span>
           </div>
           <div className="flex justify-between pt-1 text-base">
             <span className="font-bold">Итого</span>
-            <span className="font-bold tabular-nums text-green-dark">{spent}</span>
+            <span className="font-bold tabular-nums text-green-dark">{spent} млрд ₸</span>
           </div>
         </div>
 
+        {overBudget ? (
+          <p className="mt-4 rounded-xl bg-rose/10 px-3 py-2 text-xs leading-5 text-rose">
+            После события план не помещается в бюджет на {spent - budget} млрд ₸. Отмените одну из мер и
+            перераспределите средства.
+          </p>
+        ) : null}
+
         <button
           type="button"
-          disabled={!ready}
+          disabled={!ready || busy}
           onClick={onFinish}
-          className="mt-6 h-12 w-full rounded-xl bg-green text-sm font-semibold text-white transition hover:bg-green-dark disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-muted"
+          className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-green text-sm font-semibold text-white transition hover:bg-green-dark disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-muted"
         >
-          {ready ? "Завершить управление" : `Осталось выбрать ${REQUIRED_DECISIONS - decisions.length}`}
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {busy
+            ? "AI анализирует сценарий…"
+            : overBudget
+              ? "Превышен бюджет"
+              : ready
+                ? "Завершить управление"
+                : `Осталось выбрать ${REQUIRED_DECISIONS - decisions.length}`}
         </button>
         {decisions.length > 0 ? (
           <button
@@ -90,7 +163,7 @@ export function Receipt({
           </button>
         ) : null}
         <p className="mt-4 text-center text-xs leading-5 text-muted">
-          Неиспользованный остаток бонуса не даёт. Порядок решений не важен.
+          1 единица модели = 1 млрд ₸. Остаток бонуса не даёт, порядок решений не важен.
         </p>
       </div>
     </section>

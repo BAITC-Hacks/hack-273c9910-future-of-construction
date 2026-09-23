@@ -34,6 +34,7 @@ function addError(
 export function validateDecisions(
   decisions: Decision[],
   mode: ValidateMode = "final",
+  budget: number = BUDGET,
 ): ValidationResult {
   const errors: ValidationError[] = [];
 
@@ -117,11 +118,11 @@ export function validateDecisions(
     }
   }
 
-  if (totalCost > BUDGET) {
+  if (totalCost > budget) {
     addError(
       errors,
       "BUDGET",
-      `Бюджет превышен: потрачено ${totalCost} при лимите ${BUDGET}.`,
+      `Бюджет превышен: потрачено ${totalCost} млрд ₸ при лимите ${budget} млрд ₸.`,
     );
   }
 

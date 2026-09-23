@@ -96,6 +96,29 @@ export const analyzeRequestSchema = z.object({
     cityAverage: z.number(),
     criticalCount: z.number(),
   }),
+  budget: z.number().optional(),
+  cityEvent: z
+    .object({
+      title: z.string(),
+      description: z.string(),
+      reserve: z.number(),
+    })
+    .nullable()
+    .optional(),
+  advisor: z
+    .object({
+      startScore: z.number(),
+      finalScore: z.number(),
+      steps: z.array(
+        z.object({
+          remove: z.string(),
+          add: z.string(),
+          scoreAfter: z.number(),
+          gain: z.number(),
+        }),
+      ),
+    })
+    .optional(),
 });
 
 export type AnalyzeRequest = z.infer<typeof analyzeRequestSchema>;

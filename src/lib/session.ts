@@ -31,9 +31,27 @@ export function saveResult(result: SimulationResult): void {
   sessionStorage.setItem(RESULT_KEY, JSON.stringify(result));
 }
 
+export const EVENT_MODE_KEY = "akim-event-mode";
+export const EVENT_KEY = "akim-event";
+
+export function loadSessionValue<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function saveSessionValue(key: string, value: unknown): void {
+  sessionStorage.setItem(key, JSON.stringify(value));
+}
+
 export function clearSession(): void {
   sessionStorage.removeItem(DECISIONS_KEY);
   sessionStorage.removeItem(RESULT_KEY);
+  sessionStorage.removeItem(EVENT_KEY);
 }
 
 export function toAnalyzeDto(result: SimulationResult) {

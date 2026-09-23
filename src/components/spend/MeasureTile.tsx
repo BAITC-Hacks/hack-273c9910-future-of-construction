@@ -13,11 +13,13 @@ export function MeasureTile({
   measure,
   decisions,
   selected,
+  budget,
   onSelect,
   onRemove,
 }: {
   measure: Measure;
   decisions: Decision[];
+  budget: number;
   selected: Decision | undefined;
   onSelect: (decision: Decision) => void;
   onRemove: () => void;
@@ -27,11 +29,11 @@ export function MeasureTile({
   const isDistrict = measure.scope === "district";
   const blocked = selected
     ? null
-    : whyBlocked(decisions, measure, isDistrict ? districtId : undefined);
+    : whyBlocked(decisions, measure, isDistrict ? districtId : undefined, budget);
   const needsDistrict = blocked === NEEDS_DISTRICT;
   const hardBlocked = Boolean(blocked) && !needsDistrict;
   const unavailableAnywhere =
-    isDistrict && !selected && whyBlocked(decisions, measure, undefined) !== NEEDS_DISTRICT;
+    isDistrict && !selected && whyBlocked(decisions, measure, undefined, budget) !== NEEDS_DISTRICT;
 
   function choose() {
     if (measure.scope === "city") {
@@ -62,7 +64,7 @@ export function MeasureTile({
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold tabular-nums text-ink">{measure.cost}</p>
-          <p className="text-[11px] uppercase tracking-[0.14em] text-muted">единиц</p>
+          <p className="text-[11px] uppercase tracking-[0.14em] text-muted">млрд ₸</p>
         </div>
       </div>
 
