@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { AccountLink } from "@/components/auth/AccountLink";
 import { Bot, CloudLightning, Landmark, Scale, Wallet } from "lucide-react";
 import { BUDGET, CATEGORY_LABELS, REQUIRED_DECISIONS } from "@/domain/constants";
 import { CATEGORIES } from "@/domain/types";
@@ -213,6 +214,7 @@ export function SpendGame() {
   return (
     <div className="min-h-screen pb-20">
       <header className="mx-auto flex max-w-3xl flex-col items-center px-5 pb-10 pt-14 text-center">
+        <div className="mb-6 flex w-full justify-end"><AccountLink /></div>
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-green">
           HackAlem AI · AI-симулятор управления городом
         </p>

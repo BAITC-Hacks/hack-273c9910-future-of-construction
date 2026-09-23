@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AccountLink } from "@/components/auth/AccountLink";
 import { ArrowRight, BarChart3, Building2, ChevronRight, CircleGauge, Database, ShieldCheck, SlidersHorizontal, Sparkles } from "lucide-react";
 import { BUDGET, REQUIRED_DECISIONS } from "@/domain/constants";
 
@@ -13,7 +14,7 @@ const navItems = [
 export function LandingPage() {
   return (
     <main className="min-h-screen overflow-hidden bg-[#08120f] text-white">
-      <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-10">
+      <nav className="relative z-10 mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-5 lg:px-10">
         <Link href="/" className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-300/30 bg-emerald-300/10 text-emerald-200">
             <Building2 className="h-5 w-5" />
@@ -26,9 +27,12 @@ export function LandingPage() {
         <div className="hidden items-center gap-8 text-sm text-slate-300 md:flex">
           {navItems.map((item) => <a key={item.href} href={item.href} className="transition hover:text-white">{item.label}</a>)}
         </div>
-        <Link href="/simulator" className="inline-flex items-center gap-2 rounded-xl bg-emerald-300 px-4 py-2.5 text-sm font-bold text-[#08120f] transition hover:bg-emerald-200">
-          Запустить симулятор <ArrowRight className="h-4 w-4" />
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <AccountLink dark />
+          <Link href="/simulator" className="inline-flex items-center gap-2 rounded-xl bg-emerald-300 px-4 py-2.5 text-sm font-bold text-[#08120f] transition hover:bg-emerald-200">
+            Запустить симулятор <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
       </nav>
 
       <section className="relative mx-auto grid max-w-7xl gap-14 px-6 pb-20 pt-20 lg:grid-cols-[1.05fr_.95fr] lg:px-10 lg:pb-28 lg:pt-28">
@@ -62,8 +66,8 @@ export function LandingPage() {
       </section>
 
       <section id="platform" className="border-t border-white/10 bg-[#f3f5f0] px-6 py-20 text-[#102019] lg:px-10"><div className="mx-auto max-w-7xl"><p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Единый контур управления</p><h2 className="mt-3 max-w-2xl text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">От бюджета до измеримого результата в одном окне.</h2><div className="mt-12 grid gap-4 md:grid-cols-3"><InfoCard icon={<CircleGauge />} title="Сценарии до запуска" text="Проверяйте решения на цифровой модели районов, бюджета и временного лага." /><InfoCard icon={<BarChart3 />} title="Язык показателей" text="Вместо общих обещаний — 10 индикаторов, понятный score и карта слабых мест." /><InfoCard icon={<Database />} title="Контроль конфигурации" text="Администратор управляет каталогом мер, стоимостью, приоритетами и доступностью." /></div></div></section>
-      <section id="workflow" className="bg-[#e8eee7] px-6 py-16 lg:px-10"><div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-3"><Step number="01" title="Соберите портфель" text="Выберите меры и задайте желаемый бюджет под конкретную повестку." /><Step number="02" title="Сравните последствия" text="Модель покажет эффект по районам, задержку результата и opportunity cost." /><Step number="03" title="Зафиксируйте курс" text="Получите понятный управленческий отчёт и сохраните сценарий для команды." /></div></section>
-      <footer id="governance" className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-8 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between lg:px-10"><span>ASTANA 2028 · AI Urban Decision Lab</span><div className="flex gap-5"><Link href="/simulator" className="transition hover:text-emerald-700">Рабочий стол</Link><Link href="/admin" className="transition hover:text-emerald-700">Администрирование</Link></div></footer>
+      <section id="workflow" className="bg-[#e8eee7] px-6 py-16 text-[#102019] lg:px-10"><div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-3"><Step number="01" title="Соберите портфель" text="Выберите меры и задайте желаемый бюджет под конкретную повестку." /><Step number="02" title="Сравните последствия" text="Модель покажет эффект по районам, задержку результата и opportunity cost." /><Step number="03" title="Зафиксируйте курс" text="Получите понятный управленческий отчёт и сохраните сценарий для команды." /></div></section>
+      <footer id="governance" className="border-t border-[#d5ded3] bg-[#f3f5f0] text-[#102019]"><div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-8 text-sm lg:flex-row lg:items-center lg:justify-between lg:px-10"><span className="font-semibold tracking-tight">ASTANA 2028 <span className="font-normal text-slate-500">· AI Urban Decision Lab</span></span><div className="flex gap-5 text-slate-600"><Link href="/simulator" className="transition hover:text-emerald-700">Рабочий стол</Link><Link href="/admin" className="transition hover:text-emerald-700">Администрирование</Link></div></div></footer>
     </main>
   );
 }
