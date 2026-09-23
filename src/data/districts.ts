@@ -1,0 +1,106 @@
+import type { District } from "@/domain/types";
+
+export const DISTRICTS: District[] = [
+  {
+    id: "esil",
+    name: "Esil",
+    nameRu: "Есиль",
+    populationShare: 0.27,
+    profile:
+      "Богатый район, но имеются пробки на мостах и перегруженные школы.",
+    indicators: {
+      T1: 45,
+      T2: 62,
+      E1: 68,
+      E2: 72,
+      S1: 48,
+      S2: 55,
+      B1: 78,
+      B2: 60,
+      C1: 75,
+      C2: 70,
+    },
+  },
+  {
+    id: "almaty",
+    name: "Almaty",
+    nameRu: "Алматы",
+    populationShare: 0.24,
+    profile: "Проблемы старого ЖКХ и транспортной нагрузки.",
+    indicators: {
+      T1: 40,
+      T2: 75,
+      E1: 50,
+      E2: 55,
+      S1: 60,
+      S2: 65,
+      B1: 62,
+      B2: 52,
+      C1: 50,
+      C2: 60,
+    },
+  },
+  {
+    id: "saryarka",
+    name: "Saryarka",
+    nameRu: "Сарыарка",
+    populationShare: 0.2,
+    profile:
+      "Проблемы качества воздуха от частного сектора и недостаточного озеленения.",
+    indicators: {
+      T1: 50,
+      T2: 70,
+      E1: 42,
+      E2: 40,
+      S1: 62,
+      S2: 68,
+      B1: 58,
+      B2: 55,
+      C1: 45,
+      C2: 55,
+    },
+  },
+  {
+    id: "baikonyr",
+    name: "Baikonyr",
+    nameRu: "Байконур",
+    populationShare: 0.13,
+    profile: "Сбалансированный район без экстремальных перекосов.",
+    indicators: {
+      T1: 52,
+      T2: 68,
+      E1: 55,
+      E2: 50,
+      S1: 58,
+      S2: 60,
+      B1: 52,
+      B2: 58,
+      C1: 55,
+      C2: 58,
+    },
+  },
+  {
+    id: "nura",
+    name: "Nura",
+    nameRu: "Нура",
+    populationShare: 0.16,
+    profile:
+      "Главный аутсайдер по социальной инфраструктуре и общественному транспорту.",
+    indicators: {
+      T1: 55,
+      T2: 40,
+      E1: 45,
+      E2: 65,
+      S1: 38,
+      S2: 35,
+      B1: 55,
+      B2: 50,
+      C1: 60,
+      C2: 50,
+    },
+  },
+];
+
+export const DISTRICTS_BY_ID = Object.fromEntries(
+  DISTRICTS.map((district) => [district.id, district]),
+) as Record<District["id"], District>;

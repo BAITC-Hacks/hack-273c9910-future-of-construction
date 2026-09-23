@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #071018;
+  --bg-soft: #0c1822;
+  --surface: #11202c;
+  --surface-2: #173041;
+  --line: rgba(212, 184, 122, 0.16);
+  --line-strong: rgba(212, 184, 122, 0.32);
+  --gold: #d4b87a;
+  --gold-bright: #f3e1b3;
+  --teal: #4fd1c5;
+  --rose: #f07183;
+  --amber: #e8b86d;
+  --text: #e8eef4;
+  --muted: #8ea0b0;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-soft: var(--bg-soft);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-teal: var(--teal);
+  --color-rose: var(--rose);
+  --color-amber: var(--amber);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
+}
+
+* {
+  border-color: var(--line);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(79, 209, 197, 0.08), transparent 50%),
+    radial-gradient(900px 500px at 100% 0%, rgba(212, 184, 122, 0.08), transparent 45%),
+    var(--bg);
+}
+
+::selection {
+  background: rgba(212, 184, 122, 0.28);
+}
+
+.panel {
+  background: linear-gradient(180deg, rgba(23, 48, 65, 0.72), rgba(17, 32, 44, 0.92));
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+}
+
+.gold-line {
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
