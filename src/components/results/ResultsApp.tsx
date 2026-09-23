@@ -58,6 +58,7 @@ export function ResultsApp() {
   }
 
   async function runAnalysis() {
+    if (!result) return;
     setAiLoading(true);
     setAiMessage(null);
     try {

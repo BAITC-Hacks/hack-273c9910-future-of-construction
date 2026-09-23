@@ -34,13 +34,13 @@ export const INDICATOR_LABELS: Record<IndicatorKey, string> = {
 
 export const INDICATOR_SHORT_LABELS: Record<IndicatorKey, string> = {
   T1: "Дороги",
-  T2: "OT",
+  T2: "Общ. транспорт",
   E1: "Озеленение",
   E2: "Воздух",
   S1: "Школы",
   S2: "Медицина",
-  B1: "Улицы",
-  B2: "ДД",
+  B1: "Безоп. улиц",
+  B2: "Безоп. движения",
   C1: "ЖКХ",
   C2: "Обращения",
 };

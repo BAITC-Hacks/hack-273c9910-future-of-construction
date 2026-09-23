@@ -9,6 +9,8 @@ import { MEASURES_BY_ID } from "@/data/measures";
 import { validateDecisions } from "@/engine/validator";
 import { totalCostOf } from "@/engine/validator";
 
+export const NEEDS_DISTRICT = "Сначала выберите район.";
+
 export function selectedMeasureIds(decisions: Decision[]): Set<MeasureId> {
   return new Set(decisions.map((decision) => decision.measureId));
 }
@@ -46,7 +48,7 @@ export function whyBlocked(
   }
 
   if (measure.scope === "district" && !districtId) {
-    return "Сначала выберите район.";
+    return NEEDS_DISTRICT;
   }
 
   if (measure.scope === "district" && districtId) {

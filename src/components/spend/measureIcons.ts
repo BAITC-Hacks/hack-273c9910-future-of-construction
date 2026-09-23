@@ -1,0 +1,35 @@
+import {
+  BusFront,
+  Cctv,
+  Dumbbell,
+  Flame,
+  Footprints,
+  Hospital,
+  School,
+  Siren,
+  Smartphone,
+  TrafficCone,
+  TramFront,
+  Trees,
+  Wind,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
+import type { MeasureId } from "@/domain/types";
+
+export const MEASURE_ICONS: Record<MeasureId, LucideIcon> = {
+  M1: BusFront,
+  M2: TrafficCone,
+  M3: TramFront,
+  M4: Trees,
+  M5: Flame,
+  M6: Wind,
+  M7: School,
+  M8: Hospital,
+  M9: Dumbbell,
+  M10: Cctv,
+  M11: Footprints,
+  M12: Smartphone,
+  M13: Wrench,
+  M14: Siren,
+};

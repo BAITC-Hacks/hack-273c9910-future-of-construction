@@ -1,0 +1,35 @@
+import {
+  Bus,
+  Cctv,
+  Droplets,
+  Dumbbell,
+  Flame,
+  Footprints,
+  MessageSquareText,
+  School,
+  Siren,
+  Stethoscope,
+  TrafficCone,
+  TramFront,
+  Trees,
+  Wind,
+  type LucideIcon,
+} from "lucide-react";
+import type { MeasureId } from "@/domain/types";
+
+export const MEASURE_VISUALS: Record<MeasureId, { icon: LucideIcon; blurb: string }> = {
+  M1: { icon: Bus, blurb: "Автобусы едут мимо пробок, людям быстрее добираться." },
+  M2: { icon: TrafficCone, blurb: "Светофоры подстраиваются под поток по всему городу." },
+  M3: { icon: TramFront, blurb: "Скоростной рельсовый транспорт в выбранный район." },
+  M4: { icon: Trees, blurb: "Новый сквер: больше зелени, чище воздух, светлее дворы." },
+  M5: { icon: Flame, blurb: "Частные дома переходят с угля на чистое топливо." },
+  M6: { icon: Wind, blurb: "Ветрозащитные полосы и озеленение по всему городу." },
+  M7: { icon: School, blurb: "Места в школе и детсаду там, где их не хватает." },
+  M8: { icon: Stethoscope, blurb: "Врач рядом с домом, без очередей через весь город." },
+  M9: { icon: Dumbbell, blurb: "Площадки во дворах для детей и взрослых." },
+  M10: { icon: Cctv, blurb: "Свет и камеры на улицах, где темно и небезопасно." },
+  M11: { icon: Footprints, blurb: "Безопасные переходы у школ, но машинам чуть медленнее." },
+  M12: { icon: MessageSquareText, blurb: "Одно окно для жалоб жителей, ответы быстрее." },
+  M13: { icon: Droplets, blurb: "Новые трубы тепла и воды — меньше аварий зимой." },
+  M14: { icon: Siren, blurb: "Дежурные бригады и оповещение до того, как прорвёт." },
+};
