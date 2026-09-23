@@ -12,12 +12,15 @@ import {
   Trophy,
   Wand2,
 } from "lucide-react";
-import type { AiAnalysis, SimulationResult } from "@/domain/types";
+import { DISTRICTS_BY_ID } from "@/data/districts";
+import { BUDGET } from "@/domain/constants";
+import type { AiAnalysis, AlternativeScenario, SimulationResult } from "@/domain/types";
 import type { CityEvent } from "@/data/events";
 import type { Advice } from "@/engine/advisor";
 import { describeDecision } from "@/ai/localAnalyst";
 import type { AnalysisOutcome, SimulationSource } from "@/lib/analysisClient";
 import type { LeaderboardEntry } from "@/lib/leaderboard";
+import { buildAiCouncil } from "@/lib/decisionNarrative";
 import { cn, formatDelta, formatScore } from "@/lib/utils";
 
 export function ResultPanel({
@@ -29,6 +32,7 @@ export function ResultPanel({
   event,
   leaderboard,
   currentEntryId,
+  aiScenario,
   onApplyAdvice,
   onDownload,
   onClearLeaderboard,
@@ -42,25 +46,28 @@ export function ResultPanel({
   event: CityEvent | null;
   leaderboard: LeaderboardEntry[];
   currentEntryId: string | null;
+  aiScenario: AlternativeScenario | null;
   onApplyAdvice: () => void;
   onDownload: () => void;
   onClearLeaderboard: () => void;
   onReset: () => void;
 }) {
   const insights = new Map(analysis?.analysis.districtInsights.map((item) => [item.districtId, item.text]) ?? []);
+  const council = buildAiCouncil();
 
   return (
     <section id="result" className="mx-auto w-full max-w-4xl animate-pop scroll-mt-28 space-y-4">
-      <div className="rounded-3xl bg-green px-6 py-10 text-center text-white md:px-12">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/70">Итог вашего мандата</p>
-        <h2 className="mt-2 text-2xl font-bold md:text-3xl">Astana Quality of Life Score</h2>
-        <div className="mt-8 grid grid-cols-3 gap-4">
+      <div className="rounded-3xl bg-gradient-to-br from-green to-green-dark px-6 py-10 text-center text-white md:px-12">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/70">ASTANA 2028</p>
+        <h2 className="mt-2 text-2xl font-bold md:text-3xl">Quality of Life</h2>
+        <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
           <Stat label="Было" value={formatScore(result.scoreBefore.finalScore)} />
           <Stat label="Стало" value={formatScore(result.finalScore)} big />
-          <Stat label="Изменение" value={formatDelta(result.scoreDelta)} />
+          <Stat label="Δ" value={formatDelta(result.scoreDelta)} />
+          <Stat label="Бюджет" value={`${result.remainingBudget} / ${BUDGET}`} />
         </div>
         <p className="mt-6 text-xs text-white/70">
-          Score = 0.7 × средняя оценка районов (по доле жителей) + 0.3 × самый слабый район − критические провалы
+          Критических проблем: {result.scoreBefore.criticalCount} → {result.criticalIndicators.length}. Самый слабый район: {result.weakestDistrict.name}.
         </p>
       </div>
 
@@ -75,6 +82,52 @@ export function ResultPanel({
           value={`${result.scoreBefore.criticalCount} → ${result.criticalIndicators.length}`}
         />
       </div>
+
+      <div className="panel rounded-2xl p-6">
+        <h3 className="flex items-center gap-2 font-semibold text-ink">
+          <Wand2 className="h-4 w-4 text-green" /> Цена решения
+        </h3>
+        <p className="mt-3 text-sm leading-7 text-ink">
+          Вы выбрали набор решений, который поднимает индекс качества жизни, но ограничивает альтернативные крупные
+          инвестиции в транспорт и городскую инфраструктуру. Это не просто плюс — это реальная цена выбора.
+        </p>
+        <ul className="mt-4 space-y-2 text-sm text-ink">
+          <li>✓ Стабилизирован weakest district и закрыты критические зоны.</li>
+          <li>✓ Эффект возрастает за счёт синергии между социальными и экологическими мерами.</li>
+          <li>− По сравнению с максимальным сценариев, часть бюджета не задействована в крупном Транспортном проекте.</li>
+        </ul>
+      </div>
+
+      {aiScenario ? (
+        <div className="panel rounded-2xl p-6">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="flex items-center gap-2 font-semibold text-ink">
+              <Sparkles className="h-4 w-4 text-green" /> Что сделал бы AI?
+            </h3>
+            <span className="rounded-full bg-green-soft px-3 py-1 text-[11px] font-semibold text-green-dark">
+              AI-сценарий
+            </span>
+          </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <ScenarioCard
+              title="Ваш город"
+              score={formatScore(result.finalScore)}
+              district={result.weakestDistrict.name}
+              budget={`${result.remainingBudget} / ${BUDGET}`}
+              critical={`${result.criticalIndicators.length}`}
+              accent="human"
+            />
+            <ScenarioCard
+              title="AI-сценарий"
+              score={formatScore(aiScenario.finalScore)}
+              district={DISTRICTS_BY_ID[aiScenario.weakestDistrictId]?.nameRu ?? "—"}
+              budget={`${aiScenario.remainingBudget} / ${BUDGET}`}
+              critical={`${aiScenario.criticalCount}`}
+              accent="ai"
+            />
+          </div>
+        </div>
+      ) : null}
 
       <AnalysisCard analysis={analysis} />
 
@@ -172,6 +225,25 @@ export function ResultPanel({
         </div>
       ) : null}
 
+      <div className="panel rounded-2xl p-6">
+        <h3 className="flex items-center gap-2 font-semibold text-ink">
+          <Bot className="h-4 w-4 text-green" /> AI Council — виртуальное совещание акимата
+        </h3>
+        <div className="mt-4 space-y-3">
+          {council.map((item) => (
+            <div key={item.title} className="rounded-xl border border-line bg-surface-2 p-4">
+              <p className="text-sm font-semibold text-ink">{item.title}</p>
+              <p className="mt-1 text-sm leading-6 text-muted">{item.text}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 rounded-xl border border-green/30 bg-green-soft/50 px-4 py-3 text-sm leading-6 text-ink">
+          <span className="font-semibold text-green-dark">AI Chief Analyst:</span> Компромисс вашего сценария в том,
+          что сильный социальный эффект в Нуре заметно усиливает слабый район, но сокращает запас на более крупную
+          транспортную перестройку в Есиле.
+        </div>
+      </div>
+
       {event ? (
         <div className="rounded-2xl border border-rose/25 bg-rose/5 p-5 text-sm leading-6 text-ink">
           <span className="font-semibold text-rose">Городское событие · {event.title}.</span> Из бюджета изъято{" "}
@@ -257,6 +329,34 @@ function AnalysisBody({ analysis }: { analysis: AiAnalysis }) {
         />
       </div>
     </>
+  );
+}
+
+function ScenarioCard({
+  title,
+  score,
+  district,
+  budget,
+  critical,
+  accent,
+}: {
+  title: string;
+  score: string;
+  district: string;
+  budget: string;
+  critical: string;
+  accent: "human" | "ai";
+}) {
+  return (
+    <div className={cn("rounded-2xl border p-4", accent === "human" ? "border-line bg-surface-2" : "border-green/30 bg-green-soft") }>
+      <p className="text-[11px] uppercase tracking-[0.14em] text-muted">{title}</p>
+      <p className="mt-2 text-3xl font-bold tabular-nums text-ink">{score}</p>
+      <div className="mt-4 space-y-2 text-sm text-muted">
+        <div className="flex justify-between gap-3"><span>Слабый район</span><span className="font-medium text-ink">{district}</span></div>
+        <div className="flex justify-between gap-3"><span>Критических</span><span className="font-medium text-ink">{critical}</span></div>
+        <div className="flex justify-between gap-3"><span>Бюджет</span><span className="font-medium text-ink">{budget}</span></div>
+      </div>
+    </div>
   );
 }
 

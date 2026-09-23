@@ -2,6 +2,8 @@ import type { Decision, SimulationResult } from "@/domain/types";
 
 export const DECISIONS_KEY = "akim-decisions";
 export const RESULT_KEY = "akim-result";
+export const BUDGET_KEY = "akim-budget";
+export const ADMIN_MEASURES_KEY = "akim-admin-measures";
 
 export function loadDecisions(): Decision[] {
   if (typeof window === "undefined") return [];

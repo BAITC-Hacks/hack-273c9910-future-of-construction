@@ -1,5 +1,5 @@
-import { SimulatorApp } from "@/components/dashboard/SimulatorApp";
+import { SpendGame } from "@/components/spend/SpendGame";
 
 export default function SimulatorPage() {
-  return <SimulatorApp />;
+  return <SpendGame />;
 }

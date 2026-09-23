@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Bot, CloudLightning, Landmark, Scale, Wallet } from "lucide-react";
 import { BUDGET, CATEGORY_LABELS, REQUIRED_DECISIONS } from "@/domain/constants";
 import { CATEGORIES } from "@/domain/types";
-import type { Category, Decision, SimulationResult } from "@/domain/types";
+import type { AlternativeScenario, Category, Decision, SimulationResult } from "@/domain/types";
 import { EVENT_TRIGGER_DECISION, pickCityEvent, type CityEvent } from "@/data/events";
 import { MEASURES } from "@/data/measures";
 import { adviseImprovements, type Advice } from "@/engine/advisor";
+import { optimizeScenarios } from "@/engine/optimizer";
 import { baselineDistricts, previewDecisions } from "@/engine/simulation";
 import { baselineScore } from "@/engine/scoring";
 import { totalCostOf, validateDecisions } from "@/engine/validator";
@@ -24,6 +25,7 @@ import { buildReportMarkdown, downloadText } from "@/lib/report";
 import {
   EVENT_KEY,
   EVENT_MODE_KEY,
+  BUDGET_KEY,
   clearSession,
   loadDecisions,
   loadSessionValue,
@@ -46,6 +48,7 @@ type Outcome = {
   advice: Advice;
   analysis: AnalysisOutcome | null;
   entryId: string | null;
+  aiScenario: AlternativeScenario | null;
 };
 
 export function SpendGame() {
@@ -59,14 +62,16 @@ export function SpendGame() {
   const [busy, setBusy] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [resetKey, setResetKey] = useState(0);
+  const [budgetLimit, setBudgetLimit] = useState(BUDGET);
 
-  const budget = BUDGET - (event?.reserve ?? 0);
+  const budget = budgetLimit - (event?.reserve ?? 0);
 
   useEffect(() => {
     const stored = loadDecisions();
     if (validateDecisions(stored, "partial").ok) setDecisions(stored);
     setEventMode(loadSessionValue(EVENT_MODE_KEY, false));
     setEvent(loadSessionValue<CityEvent | null>(EVENT_KEY, null));
+    setBudgetLimit(loadSessionValue(BUDGET_KEY, BUDGET));
     setTeam(loadTeamName());
     setLeaderboard(loadLeaderboard());
     setHydrated(true);
@@ -77,7 +82,8 @@ export function SpendGame() {
     saveDecisions(decisions);
     saveSessionValue(EVENT_MODE_KEY, eventMode);
     saveSessionValue(EVENT_KEY, event);
-  }, [decisions, eventMode, event, hydrated]);
+    saveSessionValue(BUDGET_KEY, budgetLimit);
+  }, [decisions, eventMode, event, budgetLimit, hydrated]);
 
   useEffect(() => {
     if (eventMode && !event && decisions.length >= EVENT_TRIGGER_DECISION) {
@@ -126,6 +132,7 @@ export function SpendGame() {
     try {
       const { result, source } = await runSimulation(decisions);
       const advice = adviseImprovements(decisions, { budget });
+      const optimized = optimizeScenarios();
       const { entries, id: entryId } = addLeaderboardEntry({
         team: team.trim() || "Без названия",
         score: result.finalScore,
@@ -136,7 +143,24 @@ export function SpendGame() {
         decisions,
       });
       setLeaderboard(entries);
-      setOutcome({ result, simulationSource: source, advice, analysis: null, entryId });
+      setOutcome({
+        result,
+        simulationSource: source,
+        advice,
+        analysis: null,
+        entryId,
+        aiScenario: {
+          decisions: optimized.bestScenario.decisions,
+          totalCost: optimized.bestScenario.totalCost,
+          remainingBudget: optimized.bestScenario.remainingBudget,
+          finalScore: optimized.bestScenario.finalScore,
+          scoreDelta: optimized.bestScenario.scoreDelta,
+          cityAverage: optimized.bestScenario.cityAverage,
+          weakestDistrictId: optimized.bestScenario.weakestDistrictId,
+          criticalCount: optimized.bestScenario.criticalCount,
+          activatedSynergies: optimized.bestScenario.activatedSynergies,
+        },
+      });
       requestAnimationFrame(() =>
         document.getElementById("result")?.scrollIntoView({ behavior: "smooth", block: "start" }),
       );
@@ -197,7 +221,7 @@ export function SpendGame() {
         </div>
         <h1 className="mt-6 text-4xl font-bold tracking-tight text-ink md:text-6xl">Аким на 5 часов</h1>
         <p className="mt-4 max-w-xl text-base leading-7 text-muted md:text-lg">
-          У вас <span className="font-semibold text-ink">{BUDGET} млрд ₸</span> городского бюджета и ровно{" "}
+          У вас <span className="font-semibold text-ink">{budgetLimit} млрд ₸</span> городского бюджета и ровно{" "}
           {REQUIRED_DECISIONS} решений. Распределите их между транспортом, экологией, социальной сферой,
           безопасностью и сервисами так, чтобы Astana Quality of Life Score вырос для всех районов.
         </p>
@@ -233,6 +257,10 @@ export function SpendGame() {
             перераспределить.
           </p>
         ) : null}
+        <label className="mt-5 flex w-full max-w-sm items-center justify-between gap-4 rounded-2xl border border-line bg-surface px-4 py-3 text-left shadow-sm">
+          <span><span className="block text-sm font-semibold text-ink">Желаемый бюджет</span><span className="text-xs text-muted">Можно изменить под задачу</span></span>
+          <span className="flex items-center gap-2"><input type="number" min="20" max="500" value={budgetLimit} onChange={(change) => setBudgetLimit(Math.max(20, Math.min(500, Number(change.target.value) || 20)))} className="w-20 rounded-lg border border-line bg-surface-2 px-2 py-1.5 text-right text-sm font-semibold text-ink outline-none focus:border-green" /><span className="text-xs text-muted">млрд ₸</span></span>
+        </label>
       </header>
 
       <BudgetBar
@@ -309,6 +337,7 @@ export function SpendGame() {
               event={event}
               leaderboard={leaderboard}
               currentEntryId={outcome.entryId}
+              aiScenario={outcome.aiScenario ?? null}
               onApplyAdvice={applyAdvice}
               onDownload={download}
               onClearLeaderboard={resetLeaderboard}

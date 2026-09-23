@@ -6,6 +6,7 @@ import { CATEGORY_LABELS, INDICATOR_SHORT_LABELS } from "@/domain/constants";
 import type { Decision, DistrictId, Measure } from "@/domain/types";
 import { DISTRICTS, DISTRICTS_BY_ID } from "@/data/districts";
 import { districtConflictHint, NEEDS_DISTRICT, whyBlocked } from "@/lib/eligibility";
+import { buildImpactPreview } from "@/lib/decisionNarrative";
 import { cn, formatDelta } from "@/lib/utils";
 import { MEASURE_VISUALS } from "./measureVisuals";
 
@@ -26,6 +27,8 @@ export function MeasureTile({
 }) {
   const [districtId, setDistrictId] = useState<DistrictId | undefined>(undefined);
   const { icon: Icon, blurb } = MEASURE_VISUALS[measure.id];
+  const selectedDistrictId = selected && selected.scope === "district" ? selected.districtId : undefined;
+  const preview = buildImpactPreview(measure, districtId ?? selectedDistrictId);
   const isDistrict = measure.scope === "district";
   const blocked = selected
     ? null
@@ -95,6 +98,11 @@ export function MeasureTile({
             {formatDelta(value ?? 0, 0)} {INDICATOR_SHORT_LABELS[key as keyof typeof INDICATOR_SHORT_LABELS]}
           </span>
         ))}
+      </div>
+
+      <div className="mt-3 rounded-xl border border-line bg-surface-2 px-3 py-2">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">AI Impact Preview</p>
+        <p className="mt-1 text-xs leading-5 text-ink">{preview.summary}</p>
       </div>
 
       {isDistrict && !selected ? (

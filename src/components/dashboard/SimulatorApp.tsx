@@ -92,6 +92,7 @@ export function SimulatorApp() {
         score={headerScore}
         spent={totalCostOf(decisions)}
         decisions={decisions.length}
+        budget={100}
       />
       <main className="mx-auto grid max-w-[1440px] gap-6 px-6 py-8 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-8">

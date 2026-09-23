@@ -1,4 +1,5 @@
-import { Loader2, Receipt as ReceiptIcon, Users } from "lucide-react";
+import { useState } from "react";
+import { BriefcaseBusiness, Loader2, Receipt as ReceiptIcon, ShieldCheck, Users } from "lucide-react";
 import { BUDGET, CATEGORY_LABELS, REQUIRED_DECISIONS } from "@/domain/constants";
 import { CATEGORIES } from "@/domain/types";
 import type { Decision } from "@/domain/types";
@@ -6,6 +7,12 @@ import { DISTRICTS_BY_ID } from "@/data/districts";
 import type { CityEvent } from "@/data/events";
 import { MEASURES_BY_ID } from "@/data/measures";
 import { cn } from "@/lib/utils";
+
+const AVATARS = [
+  { id: "akim", label: "Аким", icon: BriefcaseBusiness },
+  { id: "analyst", label: "Аналитик", icon: ShieldCheck },
+  { id: "team", label: "Команда", icon: Users },
+] as const;
 
 export function Receipt({
   decisions,
@@ -28,6 +35,7 @@ export function Receipt({
   onFinish: () => void;
   onReset: () => void;
 }) {
+  const [avatar, setAvatar] = useState<(typeof AVATARS)[number]["id"]>("akim");
   const overBudget = spent > budget;
   const ready = decisions.length === REQUIRED_DECISIONS && !overBudget;
   const covered = new Set(decisions.map((decision) => MEASURES_BY_ID[decision.measureId].category));
@@ -39,6 +47,23 @@ export function Receipt({
           <ReceiptIcon className="h-6 w-6 text-green" />
           <h2 className="mt-2 text-xl font-bold text-ink">Ваш чек решений</h2>
           <p className="text-sm text-muted">Бюджет Астаны · {BUDGET} млрд ₸</p>
+        </div>
+
+        <div className="mt-5 grid grid-cols-3 gap-2">
+          {AVATARS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setAvatar(id)}
+              className={cn(
+                "rounded-xl border px-2 py-2 text-center transition",
+                avatar === id ? "border-green bg-green-soft text-green-dark" : "border-line bg-surface-2 text-muted",
+              )}
+            >
+              <Icon className="mx-auto h-4 w-4" />
+              <span className="mt-1 block text-[11px] font-medium">{label}</span>
+            </button>
+          ))}
         </div>
 
         <label className="mt-5 flex items-center gap-2 rounded-xl border border-line bg-surface-2 px-3 py-2 focus-within:border-green">
